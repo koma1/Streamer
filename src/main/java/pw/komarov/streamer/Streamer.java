@@ -1,13 +1,99 @@
 package pw.komarov.streamer;
 
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
 public class Streamer<T> implements Stream<T> {
+    private final Iterator<T> externalIterator; //source of data
+
+    /*
+            Constructing
+    */
+
+    private Streamer(Iterator<T> externalIterator) {
+        this.externalIterator = externalIterator;
+    }
+
+    public static <T> Streamer<T> empty() {
+        return
+                new Streamer<>(new Iterator<T>() {
+                    @Override
+                    public boolean hasNext() {
+                        return false;
+                    }
+
+                    @Override
+                    public T next() {
+                        throw new NoSuchElementException();
+                    }
+                });
+    }
+
+    @SafeVarargs
+    public static <E> Streamer<E> of(E... args) {
+        return of(Arrays.asList(args));
+    }
+
+    public static <E> Streamer<E> of(Iterable<E> iterable) {
+        return of(iterable.iterator());
+    }
+
+    public static <E> Streamer<E> of(Iterator<E> iterator) {
+        return new Streamer<>(iterator);
+    }
+
+    private static abstract class AbstractInfiniteIterator<E> implements Iterator<E> {
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public void forEachRemaining(Consumer<? super E> consumer) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class InfiniteGenerator<E> extends AbstractInfiniteIterator<E> {
+        private final Supplier<E> supplier;
+
+        InfiniteGenerator(Supplier<E> supplier) {
+            this.supplier = supplier;
+        }
+
+        @Override
+        public E next() {
+            return supplier.get();
+        }
+    }
+
+    public static <E> Streamer<E> generate(Supplier<E> supplier) {
+        return of(new InfiniteGenerator<>(supplier));
+    }
+
+    public static class InfiniteIterator<E> extends AbstractInfiniteIterator<E> {
+        private E value; //предыдущее значение (при первом вызове содержит initial)
+        private final UnaryOperator<E> unaryOperator;
+
+        InfiniteIterator(E initial, UnaryOperator<E> unaryOperator) {
+            this.value = initial;
+            this.unaryOperator = unaryOperator;
+        }
+
+        @Override
+        public E next() {
+            E prev = this.value; //сохраним предыдущее значение
+            this.value = unaryOperator.apply(prev); //обновим значение на основе вычисленного из предыдущего
+
+            return prev;
+        }
+    }
+
+    public static <E> Streamer<E> iterate(E initial, UnaryOperator<E> unaryOperator) {
+        return of(new InfiniteIterator<>(initial, unaryOperator));
+    }
+
     @Override
     public Stream<T> filter(Predicate<? super T> predicate) {
         throw new UnsupportedOperationException("will be soon");
