@@ -9,7 +9,7 @@ public class StreamerInstancesCreationExamples {
         Streamer.empty(); //empty streamer
 
         Streamer.of(new Object()); //from single Object
-        Streamer.of(new int[]{1, 4, 8, 17}); //from an Array
+        Streamer.of(new Integer[]{1, 4, 8, 17}); //from an Array
         Streamer.of(Arrays.asList(7.34, 9, 18.7, 3)); //from Iterable (List in this case)
         Streamer.of("Foo", "Bar", "Juice", "hello", "streamer"); //from values
 
