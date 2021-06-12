@@ -5,7 +5,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 public class Streamer<T> implements Stream<T> {
-    private final Iterator<T> externalIterator; //source of data
+    private Iterator<T> externalIterator; //source of data
 
     /*
             Constructing
@@ -289,8 +289,18 @@ public class Streamer<T> implements Stream<T> {
         throw new UnsupportedOperationException();
     }
 
+    private enum State {WAITING, OPERATED, CLOSED};
+    private State state = State.WAITING;
+
     @Override
     public void close() {
-        throw new UnsupportedOperationException("will be soon");
+        externalIterator = null; //обязательно сбросим, "уменьшив" утечку
+
+        state = State.CLOSED;
+    }
+
+    private void throwIfNotInState() {
+        if (state != State.WAITING)
+            throw new IllegalStateException("stream has already been operated upon or closed");
     }
 }
