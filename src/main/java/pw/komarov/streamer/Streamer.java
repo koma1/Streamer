@@ -94,6 +94,44 @@ public class Streamer<T> implements Stream<T> {
         return of(new InfiniteIterator<>(initial, unaryOperator));
     }
 
+    /*
+            Closure
+    */
+
+    private enum State {WAITING, OPERATED, CLOSED};
+    private State state = State.WAITING;
+
+    @Override
+    public void close() {
+        externalIterator = null; //обязательно сбросим, "уменьшив" утечку
+
+        state = State.CLOSED;
+    }
+
+    private void throwIfNotInState() {
+        if (state != State.WAITING)
+            throw new IllegalStateException("stream has already been operated upon or closed");
+    }
+
+    /*
+            Intermediate methods (conveyor, pipeline)
+    */
+
+    @Override
+    public Stream<T> limit(long maxSize) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public Stream<T> skip(long n) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public Stream<T> distinct() {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
     @Override
     public Stream<T> filter(Predicate<? super T> predicate) {
         throw new UnsupportedOperationException("will be soon");
@@ -105,42 +143,7 @@ public class Streamer<T> implements Stream<T> {
     }
 
     @Override
-    public IntStream mapToInt(ToIntFunction<? super T> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public LongStream mapToLong(ToLongFunction<? super T> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public DoubleStream mapToDouble(ToDoubleFunction<? super T> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Stream<T> distinct() {
         throw new UnsupportedOperationException("will be soon");
     }
 
@@ -154,78 +157,12 @@ public class Streamer<T> implements Stream<T> {
         throw new UnsupportedOperationException("will be soon");
     }
 
-    @Override
-    public Stream<T> peek(Consumer<? super T> action) {
-        throw new UnsupportedOperationException();
-    }
+    /*
+            Terminal methods
+    */
 
     @Override
-    public Stream<T> limit(long maxSize) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> skip(long n) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public void forEach(Consumer<? super T> action) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public void forEachOrdered(Consumer<? super T> action) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Object[] toArray() {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public <A> A[] toArray(IntFunction<A[]> generator) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public T reduce(T identity, BinaryOperator<T> accumulator) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Optional<T> reduce(BinaryOperator<T> accumulator) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public <U> U reduce(U identity, BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public <R> R collect(Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public <R, A> R collect(Collector<? super T, A, R> collector) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Optional<T> min(Comparator<? super T> comparator) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Optional<T> max(Comparator<? super T> comparator) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public long count() {
+    public Iterator<T> iterator() {
         throw new UnsupportedOperationException("will be soon");
     }
 
@@ -255,13 +192,58 @@ public class Streamer<T> implements Stream<T> {
     }
 
     @Override
-    public Iterator<T> iterator() {
+    public void forEach(Consumer<? super T> action) {
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
-    public Spliterator<T> spliterator() {
-        throw new UnsupportedOperationException();
+    public Optional<T> min(Comparator<? super T> comparator) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public Optional<T> max(Comparator<? super T> comparator) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public T reduce(T identity, BinaryOperator<T> accumulator) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public Optional<T> reduce(BinaryOperator<T> accumulator) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public <U> U reduce(U identity, BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public long count() {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public <R> R collect(Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public <R, A> R collect(Collector<? super T, A, R> collector) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public Object[] toArray() {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public <A> A[] toArray(IntFunction<A[]> generator) {
+        throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
@@ -272,6 +254,55 @@ public class Streamer<T> implements Stream<T> {
     @Override
     public Stream<T> sequential() {
         throw new UnsupportedOperationException("will be soon");
+    }
+
+    /*
+            Unsupported
+    */
+
+    @Override
+    public IntStream mapToInt(ToIntFunction<? super T> mapper) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public LongStream mapToLong(ToLongFunction<? super T> mapper) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DoubleStream mapToDouble(ToDoubleFunction<? super T> mapper) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Stream<T> peek(Consumer<? super T> action) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void forEachOrdered(Consumer<? super T> action) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Spliterator<T> spliterator() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -287,20 +318,5 @@ public class Streamer<T> implements Stream<T> {
     @Override
     public Stream<T> onClose(Runnable closeHandler) {
         throw new UnsupportedOperationException();
-    }
-
-    private enum State {WAITING, OPERATED, CLOSED};
-    private State state = State.WAITING;
-
-    @Override
-    public void close() {
-        externalIterator = null; //обязательно сбросим, "уменьшив" утечку
-
-        state = State.CLOSED;
-    }
-
-    private void throwIfNotInState() {
-        if (state != State.WAITING)
-            throw new IllegalStateException("stream has already been operated upon or closed");
     }
 }
