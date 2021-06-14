@@ -4,7 +4,8 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
-public class Streamer<T> implements Stream<T> {
+@SuppressWarnings({"WeakerAccess","unused","UnusedReturnValue"})
+public class Streamer<T> implements Stream<T>, Iterable<T> {
     private Iterator<T> externalIterator; //source of data
 
     /*
@@ -73,7 +74,7 @@ public class Streamer<T> implements Stream<T> {
     }
 
     public static class InfiniteIterator<E> extends AbstractInfiniteIterator<E> {
-        private E value; //предыдущее значение (при первом вызове содержит initial)
+        private E value; //previous value (at first call - initial value)
         private final UnaryOperator<E> unaryOperator;
 
         InfiniteIterator(E initial, UnaryOperator<E> unaryOperator) {
@@ -83,8 +84,8 @@ public class Streamer<T> implements Stream<T> {
 
         @Override
         public E next() {
-            E prev = this.value; //сохраним предыдущее значение
-            this.value = unaryOperator.apply(prev); //обновим значение на основе вычисленного из предыдущего
+            E prev = this.value; //store previous value
+            this.value = unaryOperator.apply(prev);
 
             return prev;
         }
@@ -98,23 +99,49 @@ public class Streamer<T> implements Stream<T> {
             Closure
     */
 
-    private enum State {WAITING, OPERATED, CLOSED};
+    private enum State {WAITING, OPERATED, CLOSED}
+
     private State state = State.WAITING;
+
+    private final List<Runnable> onCloseSequences = new LinkedList<>();
 
     @Override
     public void close() {
-        externalIterator = null; //обязательно сбросим, "уменьшив" утечку
+        if (state == State.WAITING)
+            internalClose();
 
+        //completing onClose sequences
+        for (Iterator<Runnable> iterator = onCloseSequences.iterator(); iterator.hasNext(); ) {
+            Runnable runnable = iterator.next();
+            try {
+                runnable.run();
+            } catch (Exception ignored) {} finally {
+                iterator.remove();
+            }
+        }
+    }
+
+    private void internalClose() {
+        externalIterator = null;
         state = State.CLOSED;
     }
 
-    private void throwIfNotInState() {
+    private void throwIfNotWaiting() {
         if (state != State.WAITING)
             throw new IllegalStateException("stream has already been operated upon or closed");
     }
 
+    @Override
+    public Stream<T> onClose(Runnable closeHandler) {
+        throwIfNotWaiting();
+
+        onCloseSequences.add(closeHandler);
+
+        return this;
+    }
+
     /*
-            Intermediate methods (conveyor, pipeline)
+            Intermediate methods (conveyor/pipeline)
     */
 
     @Override
@@ -157,6 +184,11 @@ public class Streamer<T> implements Stream<T> {
         throw new UnsupportedOperationException("will be soon");
     }
 
+    @Override
+    public Stream<T> peek(Consumer<? super T> action) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
     /*
             Terminal methods
     */
@@ -183,7 +215,7 @@ public class Streamer<T> implements Stream<T> {
 
     @Override
     public Optional<T> findFirst() {
-        throw new UnsupportedOperationException("will be soon");
+        return findAny();
     }
 
     @Override
@@ -248,12 +280,27 @@ public class Streamer<T> implements Stream<T> {
 
     @Override
     public boolean isParallel() {
-        throw new UnsupportedOperationException("will be soon");
+        return false; //мы не поддерживаем параллелизм
     }
 
     @Override
     public Stream<T> sequential() {
-        throw new UnsupportedOperationException("will be soon");
+        return this; //мы "последовательны", поэтому вернем себя же
+    }
+
+    @Override
+    public void forEachOrdered(Consumer<? super T> action) {
+        forEach(action); //опять же мы упорядочены родительским источником, поэтому, в нашем случае forEach и forEachOrdered эквивалентны
+    }
+
+    @Override
+    public Spliterator<T> spliterator() {
+        return Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED); //создадим сплитератор на основе предоставляемого нами итератора
+    }
+
+    @Override
+    public Stream<T> unordered() {
+        return this; //так же можно вернуть себя
     }
 
     /*
@@ -291,32 +338,7 @@ public class Streamer<T> implements Stream<T> {
     }
 
     @Override
-    public Stream<T> peek(Consumer<? super T> action) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void forEachOrdered(Consumer<? super T> action) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Spliterator<T> spliterator() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Stream<T> parallel() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Stream<T> unordered() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Stream<T> onClose(Runnable closeHandler) {
         throw new UnsupportedOperationException();
     }
 }
