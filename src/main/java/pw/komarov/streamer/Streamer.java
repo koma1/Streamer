@@ -111,14 +111,23 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
             internalClose();
 
         //completing onClose sequences
+        RuntimeException rte = null;
         for (Iterator<Runnable> iterator = onCloseSequences.iterator(); iterator.hasNext(); ) {
             Runnable runnable = iterator.next();
             try {
                 runnable.run();
-            } catch (Exception ignored) {} finally {
+            } catch (RuntimeException e) {
+                if (rte == null) //если это первое исключение в цепочке...
+                    rte = e; //...сохраним его
+                else //если не первое...
+                    rte.addSuppressed(e); //...сохраним его в suppressed первого
+            } finally {
                 iterator.remove();
             }
         }
+
+        if (rte != null)
+            throw rte;
     }
 
     private void internalClose() {
