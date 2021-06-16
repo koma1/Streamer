@@ -140,6 +140,88 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
             throw new IllegalStateException("stream has already been operated upon or closed");
     }
 
+    /*
+            Intermediate methods (conveyor/pipeline)
+    */
+
+    @Override
+    public Stream<T> limit(long maxSize) {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
+    @Override
+    public Stream<T> skip(long n) {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
+    @Override
+    public Stream<T> distinct() {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
+    @Override
+    public Stream<T> filter(Predicate<? super T> predicate) {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
+    @Override
+    public Stream<T> sorted() {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
+    @Override
+    public Stream<T> sorted(Comparator<? super T> comparator) {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return (Streamer<R>) this;
+    }
+
+    @Override
+    public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
+        throw new UnsupportedOperationException("will be soon");
+    }
+
+    @Override
+    public Stream<T> peek(Consumer<? super T> action) {
+        throwIfNotWaiting();
+
+        //todo: add operations here
+
+        return this;
+    }
+
     @Override
     public Stream<T> onClose(Runnable closeHandler) {
         throwIfNotWaiting();
@@ -150,75 +232,58 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     /*
-            Intermediate methods (conveyor/pipeline)
-    */
-
-    @Override
-    public Stream<T> limit(long maxSize) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> skip(long n) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> distinct() {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> filter(Predicate<? super T> predicate) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> sorted() {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> sorted(Comparator<? super T> comparator) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    @Override
-    public Stream<T> peek(Consumer<? super T> action) {
-        throw new UnsupportedOperationException("will be soon");
-    }
-
-    /*
             Terminal methods
     */
 
     @Override
     public Iterator<T> iterator() {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public boolean anyMatch(Predicate<? super T> predicate) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public boolean allMatch(Predicate<? super T> predicate) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public boolean noneMatch(Predicate<? super T> predicate) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
@@ -229,61 +294,157 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Optional<T> findAny() {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public void forEach(Consumer<? super T> action) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public Optional<T> min(Comparator<? super T> comparator) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public Optional<T> max(Comparator<? super T> comparator) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public T reduce(T identity, BinaryOperator<T> accumulator) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public Optional<T> reduce(BinaryOperator<T> accumulator) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public <U> U reduce(U identity, BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public long count() {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public <R> R collect(Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public <R, A> R collect(Collector<? super T, A, R> collector) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public Object[] toArray() {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
     @Override
     public <A> A[] toArray(IntFunction<A[]> generator) {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+
+        //todo: терминальные операции...
+
+        internalClose();
+
         throw new UnsupportedOperationException("will be soon");
     }
 
