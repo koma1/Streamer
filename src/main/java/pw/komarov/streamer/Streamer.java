@@ -144,47 +144,131 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
             Intermediate methods (conveyor/pipeline)
     */
 
+    private interface IntermediateOperation {} //
+
+    private List<IntermediateOperation> intermediateOperations = new LinkedList<>();
+
+    private interface FilteringOperation<T> extends IntermediateOperation, Predicate<T> {}
+
+    //limit()
+    private long filteredByLimit; //filtered elements count by Limit operation
+
+    private class LimitOperation implements FilteringOperation {
+        private final long maxSize; //maximum elements count that stream can return
+
+        LimitOperation(long maxSize) {
+            this.maxSize = maxSize;
+        }
+
+        @Override
+        public boolean test(Object o) {
+            return maxSize < ++filteredByLimit; //todo: а не по addedCount ли это надо смотреть?
+        }
+    }
+
     @Override
     public Stream<T> limit(long maxSize) {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new LimitOperation(maxSize));
 
         return this;
+    }
+
+    //skip()
+
+    private static class SkipOperation implements FilteringOperation {
+        private final long totalCount; //Total elements count, that streamer must skip
+        private long processedCount; //elements count that streamer was skipped
+
+        SkipOperation(long totalCount) {
+            this.totalCount = totalCount;
+        }
+
+        @Override
+        public boolean test(Object o) {
+            if (processedCount < totalCount) {
+                processedCount++;
+
+                return true;
+            }
+
+            return false;
+        }
     }
 
     @Override
     public Stream<T> skip(long n) {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new SkipOperation(n));
 
         return this;
+    }
+
+    //distinct()
+
+    private static class DistinctOperation implements FilteringOperation {
+        private Set<Object> objects = new HashSet<>();
+
+        @Override
+        public boolean test(Object o) {
+            return !objects.add(o);
+        }
     }
 
     @Override
     public Stream<T> distinct() {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new DistinctOperation());
 
         return this;
+    }
+
+    //filter()
+
+    private static class FilterOperation<T> implements FilteringOperation<T> {
+        private final Predicate<? super T> predicate;
+
+        public FilterOperation(Predicate<? super T> predicate) {
+            this.predicate = predicate;
+        }
+
+        @Override
+        public boolean test(T t) {
+            return !predicate.test(t);
+        }
     }
 
     @Override
     public Stream<T> filter(Predicate<? super T> predicate) {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new FilterOperation<>(predicate));
 
         return this;
+    }
+
+    //sorted()
+
+    public static class SortedOperation<T> implements IntermediateOperation {
+        private final Comparator<? super T> comparator;
+
+        public SortedOperation() {
+            this.comparator = null;
+        }
+
+        public SortedOperation(Comparator<? super T> comparator) {
+            this.comparator = comparator;
+        }
     }
 
     @Override
     public Stream<T> sorted() {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new SortedOperation<>());
 
         return this;
     }
@@ -193,34 +277,65 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     public Stream<T> sorted(Comparator<? super T> comparator) {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new SortedOperation<>(comparator));
 
         return this;
     }
 
-    @Override
+    //map()
+
+    private static class MapOperation<T, R> implements IntermediateOperation {
+        private final Function<? super T, ? extends R> function;
+
+        MapOperation(Function<? super T, ? extends R> function) {
+            this.function = function;
+        }
+    }
+
     @SuppressWarnings("unchecked")
+    @Override
     public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        intermediateOperations.add(new MapOperation<>(mapper));
 
         return (Streamer<R>) this;
     }
 
+    //flatMap()
+
+    private static class FlatMapOperation<T, R> implements IntermediateOperation {
+        private final Function<? super T, ? extends Stream<? extends R>> function;
+
+        FlatMapOperation(Function<? super T, ? extends Stream<? extends R>> function) {
+            this.function = function;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
     public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
-        throw new UnsupportedOperationException("will be soon");
+        throwIfNotWaiting();
+
+        intermediateOperations.add(new FlatMapOperation<>(mapper));
+
+        return (Streamer<R>) this;
     }
+
+    //peek()
+
+    private final List<Consumer<? super T>> peekSequences = new LinkedList<>();
 
     @Override
     public Stream<T> peek(Consumer<? super T> action) {
         throwIfNotWaiting();
 
-        //todo: add operations here
+        peekSequences.add(action);
 
         return this;
     }
+
+    //onClose()
 
     @Override
     public Stream<T> onClose(Runnable closeHandler) {
