@@ -139,6 +139,88 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     /*
+            Internal streamer iterator
+    */
+
+    private final StreamerIterator streamerIterator = new StreamerIterator();
+
+    private class StreamerIterator implements Iterator<T> {
+        private Boolean hasNext;
+        private T next;
+
+        @Override
+        public boolean hasNext() {
+            if (hasNext == null) {
+
+                calcNextAndHasNext();
+
+                if (!hasNext && state != State.CLOSED)
+                    internalClose();
+            }
+
+            return hasNext;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            hasNext = null;
+
+            return next;
+        }
+
+        private void calcNextAndHasNext() { //метод расчитывающий внутренние, закрытые поля next и hasNext на основании расчитанного опционала
+            Optional<T> opt = getNext(intermediateOperations);
+
+            //noinspection OptionalAssignedToNull
+            hasNext = opt != null;
+            if (hasNext)
+                next = opt.orElse(null);
+        }
+
+        @SuppressWarnings("unchecked")
+        private Optional<T> getNext(List<IntermediateOperation> operations) {
+            T next = null;
+            boolean terminated = false;
+
+            boolean hasNext = externalIterator.hasNext();
+            while (hasNext && !terminated) {
+                next = externalIterator.next();
+
+                boolean filtered = false;
+                for (IntermediateOperation operation : operations)
+                    if (operation instanceof FilteringOperation) {
+                        if (!filtered) {
+                            filtered = ((FilteringOperation<T>) operation).test(next);
+                            if (filtered && operation instanceof LimitOperation)
+                                terminated = true;
+                        }
+                    } else if (operation instanceof MapOperation)
+                        next = (T) ((MapOperation)operation).function.apply(next);
+                    else
+                        throw new UnsupportedOperationException("getNext(): " + operation.getClass().getSimpleName());
+
+                if (!filtered)
+                    break;
+                else
+                    hasNext = externalIterator.hasNext();
+            }
+
+            if (hasNext && !terminated) {
+                for (Consumer<? super T> peekSequence : peekSequences)
+                    peekSequence.accept(next);
+
+                return Optional.ofNullable(next);
+            }
+
+            //noinspection OptionalAssignedToNull
+            return null;
+        }
+    }
+
+    /*
             Intermediate methods (conveyor/pipeline)
     */
 
@@ -149,9 +231,10 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     private interface FilteringOperation<T> extends IntermediateOperation, Predicate<T> {}
 
     //limit()
-    private long filteredByLimit; //filtered elements count by Limit operation
 
-    private class LimitOperation implements FilteringOperation {
+    private static class LimitOperation<E> implements FilteringOperation<E> {
+        private long filteredByLimit; //filtered elements count by Limit operation
+
         private final long maxSize; //maximum elements count that stream can return
 
         LimitOperation(long maxSize) {
@@ -159,7 +242,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
         }
 
         @Override
-        public boolean test(Object o) {
+        public boolean test(E t) {
             return maxSize < ++filteredByLimit;
         }
     }
@@ -354,11 +437,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
         state = State.OPERATED;
 
-        //todo: терминальные операции...
-
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+        return streamerIterator;
     }
 
     @Override
@@ -424,11 +503,8 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
         state = State.OPERATED;
 
-        //todo: терминальные операции...
-
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+        while (streamerIterator.hasNext())
+            action.accept(streamerIterator.next());
     }
 
     @Override
