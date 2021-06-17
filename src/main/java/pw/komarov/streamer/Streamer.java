@@ -103,8 +103,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
     private State state = State.WAITING;
 
-    private final List<Runnable> onCloseSequences = new LinkedList<>();
-
     @Override
     public void close() {
         if (state == State.WAITING)
@@ -146,7 +144,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
     private interface IntermediateOperation {} //
 
-    private List<IntermediateOperation> intermediateOperations = new LinkedList<>();
+    private final List<IntermediateOperation> intermediateOperations = new LinkedList<>();
 
     private interface FilteringOperation<T> extends IntermediateOperation, Predicate<T> {}
 
@@ -162,7 +160,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
         @Override
         public boolean test(Object o) {
-            return maxSize < ++filteredByLimit; //todo: а не по addedCount ли это надо смотреть?
+            return maxSize < ++filteredByLimit;
         }
     }
 
@@ -255,10 +253,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     public static class SortedOperation<T> implements IntermediateOperation {
         private final Comparator<? super T> comparator;
 
-        public SortedOperation() {
-            this.comparator = null;
-        }
-
         public SortedOperation(Comparator<? super T> comparator) {
             this.comparator = comparator;
         }
@@ -268,13 +262,15 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     public Stream<T> sorted() {
         throwIfNotWaiting();
 
-        intermediateOperations.add(new SortedOperation<>());
+        intermediateOperations.add(new SortedOperation<>(null));
 
         return this;
     }
 
     @Override
     public Stream<T> sorted(Comparator<? super T> comparator) {
+        Objects.requireNonNull(comparator);
+
         throwIfNotWaiting();
 
         intermediateOperations.add(new SortedOperation<>(comparator));
@@ -336,6 +332,8 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //onClose()
+
+    private final List<Runnable> onCloseSequences = new LinkedList<>();
 
     @Override
     public Stream<T> onClose(Runnable closeHandler) {
