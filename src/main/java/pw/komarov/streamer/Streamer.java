@@ -5,7 +5,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 @SuppressWarnings({"WeakerAccess","unused","UnusedReturnValue"})
-public class Streamer<T> implements Stream<T>, Iterable<T> {
+public final class Streamer<T> implements Stream<T>, Iterable<T> {
     private Iterator<T> externalIterator; //source of data
 
     /*
@@ -130,6 +130,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
     private void internalClose() {
         externalIterator = null;
+
         state = State.CLOSED;
     }
 
@@ -193,7 +194,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
                 for (IntermediateOperation operation : operations)
                     if (operation instanceof FilteringOperation) {
                         if (!filtered) {
-                            filtered = ((FilteringOperation<T>) operation).test(next);
+                            filtered = ((FilteringOperation) operation).test(next);
                             if (filtered && operation instanceof LimitOperation)
                                 terminated = true;
                         }
@@ -224,14 +225,13 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
             Intermediate methods (conveyor/pipeline)
     */
 
-    private interface IntermediateOperation {} //
+    private interface IntermediateOperation {}
 
     private final List<IntermediateOperation> intermediateOperations = new LinkedList<>();
 
     private interface FilteringOperation<T> extends IntermediateOperation, Predicate<T> {}
 
     //limit()
-
     private static class LimitOperation<E> implements FilteringOperation<E> {
         private long filteredByLimit; //filtered elements count by Limit operation
 
@@ -257,7 +257,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //skip()
-
     private static class SkipOperation implements FilteringOperation {
         private final long totalCount; //Total elements count, that streamer must skip
         private long processedCount; //elements count that streamer was skipped
@@ -268,13 +267,7 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
         @Override
         public boolean test(Object o) {
-            if (processedCount < totalCount) {
-                processedCount++;
-
-                return true;
-            }
-
-            return false;
+            return processedCount++ < totalCount;
         }
     }
 
@@ -288,7 +281,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //distinct()
-
     private static class DistinctOperation implements FilteringOperation {
         private Set<Object> objects = new HashSet<>();
 
@@ -308,7 +300,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //filter()
-
     private static class FilterOperation<T> implements FilteringOperation<T> {
         private final Predicate<? super T> predicate;
 
@@ -332,7 +323,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //sorted()
-
     public static class SortedOperation<T> implements IntermediateOperation {
         private final Comparator<? super T> comparator;
 
@@ -362,7 +352,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //map()
-
     private static class MapOperation<T, R> implements IntermediateOperation {
         private final Function<? super T, ? extends R> function;
 
@@ -382,7 +371,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //flatMap()
-
     private static class FlatMapOperation<T, R> implements IntermediateOperation {
         private final Function<? super T, ? extends Stream<? extends R>> function;
 
@@ -402,7 +390,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //peek()
-
     private final List<Consumer<? super T>> peekSequences = new LinkedList<>();
 
     @Override
@@ -415,7 +402,6 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //onClose()
-
     private final List<Runnable> onCloseSequences = new LinkedList<>();
 
     @Override
@@ -649,17 +635,17 @@ public class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public void forEachOrdered(Consumer<? super T> action) {
-        forEach(action); //опять же мы упорядочены родительским источником, поэтому, в нашем случае forEach и forEachOrdered эквивалентны
+        forEach(action);
     }
 
     @Override
     public Spliterator<T> spliterator() {
-        return Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED); //создадим сплитератор на основе предоставляемого нами итератора
+        return Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED);
     }
 
     @Override
     public Stream<T> unordered() {
-        return this; //так же можно вернуть себя
+        return this;
     }
 
     /*
