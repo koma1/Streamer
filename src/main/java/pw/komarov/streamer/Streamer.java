@@ -152,6 +152,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         @Override
         public boolean hasNext() {
             if (hasNext == null) {
+                if (sortedCount > 0)
+                    calculateSorted();
 
                 calcNextAndHasNext();
 
@@ -170,6 +172,44 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             hasNext = null;
 
             return next;
+        }
+
+        @SuppressWarnings({"OptionalAssignedToNull","unchecked"})
+        private void calculateSorted() {
+            for (int i = 1; i <= sortedCount; i++) {
+                //building local operations list (from general operations list, by extracting sublist)
+                final List<IntermediateOperation> localOperations = new LinkedList<>();
+                SortedOperation<T> sortedOperation = null;
+                for (Iterator<IntermediateOperation> itr = intermediateOperations.iterator(); itr.hasNext(); ) {
+                    IntermediateOperation operation = itr.next();
+                    try {
+                        if (operation instanceof SortedOperation) {
+                            sortedOperation = (SortedOperation<T>) operation;
+                            break;
+                        } else
+                            localOperations.add(operation);
+                    } finally {
+                        itr.remove();
+                    }
+                }
+
+                //data collecting
+                final List<T> data = new ArrayList<>();
+                Optional<T> nextOpt;
+                do {
+                    nextOpt = getNext(localOperations);
+                    if (nextOpt != null)
+                        data.add(nextOpt.orElse(null));
+
+                } while (nextOpt != null);
+
+                //sorting...
+                if (sortedOperation != null)
+                    data.sort(sortedOperation.comparator);
+
+                //now, we can replace the iterator
+                externalIterator = data.iterator();
+            }
         }
 
         private void calcNextAndHasNext() { //метод расчитывающий внутренние, закрытые поля next и hasNext на основании расчитанного опционала
@@ -323,6 +363,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //sorted()
+    private int sortedCount;
+
     public static class SortedOperation<T> implements IntermediateOperation {
         private final Comparator<? super T> comparator;
 
@@ -336,6 +378,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         throwIfNotWaiting();
 
         intermediateOperations.add(new SortedOperation<>(null));
+        sortedCount++;
 
         return this;
     }
@@ -347,6 +390,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         throwIfNotWaiting();
 
         intermediateOperations.add(new SortedOperation<>(comparator));
+        sortedCount++;
 
         return this;
     }
