@@ -415,22 +415,18 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //flatMap()
-    private static class FlatMapOperation<T, R> implements IntermediateOperation {
-        private final Function<? super T, ? extends Stream<? extends R>> function;
-
-        FlatMapOperation(Function<? super T, ? extends Stream<? extends R>> function) {
-            this.function = function;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     @Override
     public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
+        Objects.requireNonNull(mapper);
+
         throwIfNotWaiting();
 
-        intermediateOperations.add(new FlatMapOperation<>(mapper));
+        Stream<R> result = Stream.empty();
 
-        return (Streamer<R>) this;
+        for (T t : this)
+            result = Stream.concat(result, mapper.apply(t));
+
+        return result;
     }
 
     //peek()
