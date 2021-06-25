@@ -6,6 +6,7 @@ import java.util.stream.*;
 
 @SuppressWarnings({"WeakerAccess","unused","UnusedReturnValue"})
 public final class Streamer<T> implements Stream<T>, Iterable<T> {
+    private final Streamer<?> linkedStreamer; //if created in linked mode (has parent streamer)
     private Iterator<T> externalIterator; //source of data
 
     /*
@@ -14,6 +15,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     private Streamer(Iterator<T> externalIterator) {
         this.externalIterator = externalIterator;
+        this.flatMapMapper = null;
+        this.linkedStreamer = null;
     }
 
     public static <T> Streamer<T> empty() {
@@ -134,6 +137,12 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         state = State.CLOSED;
     }
 
+    private void throwIfNotWaitingOrSetOperated() {
+        throwIfNotWaiting();
+
+        state = State.OPERATED;
+    }
+
     private void throwIfNotWaiting() {
         if (state != State.WAITING)
             throw new IllegalStateException("stream has already been operated upon or closed");
@@ -221,12 +230,18 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                 next = opt.orElse(null);
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked"})
         private Optional<T> getNext(List<IntermediateOperation> operations) {
             T next = null;
             boolean terminated = false;
 
-            boolean hasNext = externalIterator.hasNext();
+            boolean mapperMode = (linkedStreamer != null) && (flatMapMapper != null);
+            boolean hasNext = externalIterator != null && externalIterator.hasNext();
+            if (!hasNext && mapperMode && linkedStreamer.streamerIterator.hasNext()) { //если externalIterator пуст и мы в режиме flatMapper'a
+                externalIterator = (Iterator<T>) flatMapMapper.apply(linkedStreamer.streamerIterator.next()).iterator(); //переключить externalIterator на итератор "раскрытого" элемента
+                hasNext = externalIterator.hasNext();
+            }
+
             while (hasNext && !terminated) {
                 next = externalIterator.next();
 
@@ -415,18 +430,24 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //flatMap()
+    private final Function<Object, ? extends Stream<?>> flatMapMapper;
+
+    private Streamer(Streamer<?> linkedStreamer, Function<Object, ? extends Stream<?>> flatMapMapper) {
+        //Global fields
+        this.linkedStreamer = linkedStreamer;
+        this.externalIterator = null;
+        //Mapper mode fields
+        this.flatMapMapper = flatMapMapper;
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
     public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
         Objects.requireNonNull(mapper);
 
-        throwIfNotWaiting();
+        throwIfNotWaitingOrSetOperated();
 
-        Stream<R> result = Stream.empty();
-
-        for (T t : this)
-            result = Stream.concat(result, mapper.apply(t));
-
-        return result;
+        return new Streamer<>(this, (Function<Object, ? extends Stream<R>>) mapper); //todo: как то не красиво выглядит cast
     }
 
     //peek()
@@ -459,18 +480,14 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Iterator<T> iterator() {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         return streamerIterator;
     }
 
     @Override
     public boolean anyMatch(Predicate<? super T> predicate) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -481,9 +498,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public boolean allMatch(Predicate<? super T> predicate) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -494,9 +509,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public boolean noneMatch(Predicate<? super T> predicate) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -512,9 +525,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Optional<T> findAny() {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -525,9 +536,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public void forEach(Consumer<? super T> action) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         while (streamerIterator.hasNext())
             action.accept(streamerIterator.next());
@@ -535,9 +544,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Optional<T> min(Comparator<? super T> comparator) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -548,9 +555,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Optional<T> max(Comparator<? super T> comparator) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -561,9 +566,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public T reduce(T identity, BinaryOperator<T> accumulator) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -574,9 +577,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Optional<T> reduce(BinaryOperator<T> accumulator) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -587,9 +588,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public <U> U reduce(U identity, BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -600,9 +599,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public long count() {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -613,9 +610,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public <R> R collect(Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -626,9 +621,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public <R, A> R collect(Collector<? super T, A, R> collector) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -639,9 +632,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Object[] toArray() {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
@@ -652,9 +643,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public <A> A[] toArray(IntFunction<A[]> generator) {
-        throwIfNotWaiting();
-
-        state = State.OPERATED;
+        throwIfNotWaitingOrSetOperated();
 
         //todo: терминальные операции...
 
