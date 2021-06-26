@@ -541,6 +541,120 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                         false);
     }
 
+    @Override
+    public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
+        Objects.requireNonNull(mapper);
+
+        class OfInt implements PrimitiveIterator.OfInt {
+            private final Iterator<T> iteratorOfT;
+            private final Function<? super T, ? extends IntStream> mapper;
+
+            private PrimitiveIterator.OfInt ofInt;
+
+            public OfInt(Iterator<T> iteratorOfT, Function<? super T, ? extends IntStream> mapper) {
+                this.iteratorOfT = iteratorOfT;
+                this.mapper = mapper;
+            }
+
+            @Override
+            public int nextInt() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                return ofInt.next();
+            }
+
+            @Override
+            public boolean hasNext() {
+                while ((ofInt == null || !ofInt.hasNext()) && iteratorOfT.hasNext())
+                    ofInt = mapper.apply(iteratorOfT.next()).iterator();
+
+                return ofInt != null && ofInt.hasNext();
+            }
+        }
+
+        return StreamSupport.intStream(
+                Spliterators.spliteratorUnknownSize(new OfInt(this.iterator(), mapper), 0),
+                false
+        );
+    }
+
+    @Override
+    public LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper) {
+        Objects.requireNonNull(mapper);
+
+        class OfLong implements PrimitiveIterator.OfLong {
+            private final Iterator<T> iteratorOfT;
+            private final Function<? super T, ? extends LongStream> mapper;
+
+            private PrimitiveIterator.OfLong ofLong;
+
+            public OfLong(Iterator<T> iteratorOfT, Function<? super T, ? extends LongStream> mapper) {
+                this.iteratorOfT = iteratorOfT;
+                this.mapper = mapper;
+            }
+
+            @Override
+            public long nextLong() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                return ofLong.next();
+            }
+
+            @Override
+            public boolean hasNext() {
+                while ((ofLong == null || !ofLong.hasNext()) && iteratorOfT.hasNext())
+                    ofLong = mapper.apply(iteratorOfT.next()).iterator();
+
+                return ofLong != null && ofLong.hasNext();
+            }
+        }
+
+        return StreamSupport.longStream(
+                Spliterators.spliteratorUnknownSize(new OfLong(this.iterator(), mapper), 0),
+                false
+        );
+    }
+
+    @Override
+    public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
+        Objects.requireNonNull(mapper);
+
+        class OfDouble implements PrimitiveIterator.OfDouble {
+            private final Iterator<T> iteratorOfT;
+            private final Function<? super T, ? extends DoubleStream> mapper;
+
+            private PrimitiveIterator.OfDouble ofDouble;
+
+            public OfDouble(Iterator<T> iteratorOfT, Function<? super T, ? extends DoubleStream> mapper) {
+                this.iteratorOfT = iteratorOfT;
+                this.mapper = mapper;
+            }
+
+            @Override
+            public double nextDouble() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                return ofDouble.next();
+            }
+
+            @Override
+            public boolean hasNext() {
+                while ((ofDouble == null || !ofDouble.hasNext()) && iteratorOfT.hasNext())
+                    ofDouble = mapper.apply(iteratorOfT.next()).iterator();
+
+                return ofDouble != null && ofDouble.hasNext();
+            }
+        }
+
+        return StreamSupport.doubleStream(
+                Spliterators.spliteratorUnknownSize(new OfDouble(this.iterator(), mapper), 0),
+                false
+        );
+    }
+
     //peek()
     private final List<Consumer<? super T>> peekSequences = new LinkedList<>();
 
@@ -771,21 +885,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     /*
             Unsupported
     */
-
-    @Override
-    public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Stream<T> parallel() {
