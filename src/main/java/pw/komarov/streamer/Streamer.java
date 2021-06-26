@@ -450,6 +450,97 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return new Streamer<>(this, (Function<Object, ? extends Stream<R>>) mapper); //todo: как то не красиво выглядит cast
     }
 
+    //other maps
+    @Override
+    public IntStream mapToInt(ToIntFunction<? super T> mapper) {
+        Objects.requireNonNull(mapper);
+
+        class OfInt implements PrimitiveIterator.OfInt {
+            private final ToIntFunction<? super T> mapper;
+
+            public OfInt(ToIntFunction<? super T> mapper) {
+                this.mapper = mapper;
+            }
+
+            @Override
+            public int nextInt() {
+                return mapper.applyAsInt(streamerIterator.next());
+            }
+
+            @Override
+            public boolean hasNext() {
+                return streamerIterator.hasNext();
+            }
+        }
+
+        return StreamSupport
+                .intStream(
+                        Spliterators.spliteratorUnknownSize(
+                                new OfInt(mapper),
+                                0),
+                        false);
+    }
+
+    @Override
+    public LongStream mapToLong(ToLongFunction<? super T> mapper) {
+        Objects.requireNonNull(mapper);
+
+        class OfLong implements PrimitiveIterator.OfLong {
+            private final ToLongFunction<? super T> mapper;
+
+            public OfLong(ToLongFunction<? super T> mapper) {
+                this.mapper = mapper;
+            }
+
+            @Override
+            public long nextLong() {
+                return mapper.applyAsLong(streamerIterator.next());
+            }
+
+            @Override
+            public boolean hasNext() {
+                return streamerIterator.hasNext();
+            }
+        }
+
+        return StreamSupport
+                .longStream(
+                        Spliterators.spliteratorUnknownSize(
+                                new OfLong(mapper),
+                                0),
+                        false);
+    }
+
+    @Override
+    public DoubleStream mapToDouble(ToDoubleFunction<? super T> mapper) {
+        Objects.requireNonNull(mapper);
+
+        class OfDouble implements PrimitiveIterator.OfDouble {
+            private final ToDoubleFunction<? super T> mapper;
+
+            public OfDouble(ToDoubleFunction<? super T> mapper) {
+                this.mapper = mapper;
+            }
+
+            @Override
+            public double nextDouble() {
+                return mapper.applyAsDouble(streamerIterator.next());
+            }
+
+            @Override
+            public boolean hasNext() {
+                return streamerIterator.hasNext();
+            }
+        }
+
+        return StreamSupport
+                .doubleStream(
+                        Spliterators.spliteratorUnknownSize(
+                                new OfDouble(mapper),
+                                0),
+                        false);
+    }
+
     //peek()
     private final List<Consumer<? super T>> peekSequences = new LinkedList<>();
 
@@ -680,21 +771,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     /*
             Unsupported
     */
-
-    @Override
-    public IntStream mapToInt(ToIntFunction<? super T> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public LongStream mapToLong(ToLongFunction<? super T> mapper) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public DoubleStream mapToDouble(ToDoubleFunction<? super T> mapper) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
