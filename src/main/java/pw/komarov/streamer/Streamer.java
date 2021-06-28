@@ -421,22 +421,33 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //flatMap()
-    private static class FlatMapOperation<T, R> implements IntermediateOperation {
-        private final Function<? super T, ? extends Stream<? extends R>> function;
-
-        FlatMapOperation(Function<? super T, ? extends Stream<? extends R>> function) {
-            this.function = function;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     @Override
     public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
-        throwIfNotWaiting();
+        Objects.requireNonNull(mapper);
 
-        intermediateOperations.add(new FlatMapOperation<>(mapper));
+        class IteratorOfR implements Iterator<R> {
+            private final Iterator<T> OfT = Streamer.this.iterator(); //родительский итератор (содержит элементы множества)
 
-        return (Streamer<R>) this;
+            private Iterator<? extends R> ofR; //элементы подмножества Stream<R> которые будем возвращать конечному клиенту
+
+            @Override
+            public R next() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                return ofR.next();
+            }
+
+            @Override
+            public boolean hasNext() {
+                while ((ofR == null || !ofR.hasNext()) && OfT.hasNext()) //если ofR не задан (напр.: первый запрос), или в ofR отсутствуют элементы и при этом есть что раскладывать в родительском (ofT)...
+                    ofR = mapper.apply(OfT.next()).iterator(); //...разложим элемент из ofT в подмножество ofR
+
+                return ofR != null && ofR.hasNext();
+            }
+        }
+
+        return Streamer.of(new IteratorOfR());
     }
 
     //mapToInt()
