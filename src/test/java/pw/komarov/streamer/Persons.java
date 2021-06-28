@@ -22,6 +22,31 @@ class Person {
         this.gender = gender;
         this.age = age;
     }
+
+    @Override
+    public String toString() {
+        return String.format("\"%s\", %d (%s)", name, age, gender == Gender.MALE ? 'M' : 'F');
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Person)) return false;
+
+        Person person = (Person) o;
+
+        if (age != person.age) return false;
+        if (!name.equalsIgnoreCase(person.name)) return false;
+        return gender == person.gender;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + gender.hashCode();
+        result = 31 * result + age;
+        return result;
+    }
 }
 
 class PersonUtils {
