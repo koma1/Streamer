@@ -6,7 +6,6 @@ import java.util.stream.*;
 
 @SuppressWarnings({"WeakerAccess","unused","UnusedReturnValue"})
 public final class Streamer<T> implements Stream<T>, Iterable<T> {
-    private final Streamer<?> linkedStreamer; //if created in linked mode (has parent streamer)
     private Iterator<T> externalIterator; //source of data
 
     /*
@@ -15,8 +14,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     private Streamer(Iterator<T> externalIterator) {
         this.externalIterator = externalIterator;
-        this.flatMapMapper = null;
-        this.linkedStreamer = null;
     }
 
     public static <T> Streamer<T> empty() {
@@ -235,13 +232,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             T next = null;
             boolean terminated = false;
 
-            boolean mapperMode = (linkedStreamer != null) && (flatMapMapper != null);
-            boolean hasNext = externalIterator != null && externalIterator.hasNext();
-            if (!hasNext && mapperMode && linkedStreamer.streamerIterator.hasNext()) { //если externalIterator пуст и мы в режиме flatMapper'a
-                externalIterator = (Iterator<T>) flatMapMapper.apply(linkedStreamer.streamerIterator.next()).iterator(); //переключить externalIterator на итератор "раскрытого" элемента
-                hasNext = externalIterator.hasNext();
-            }
-
+            boolean hasNext = externalIterator.hasNext();
             while (hasNext && !terminated) {
                 next = externalIterator.next();
 
@@ -430,27 +421,25 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     //flatMap()
-    private final Function<Object, ? extends Stream<?>> flatMapMapper;
+    private static class FlatMapOperation<T, R> implements IntermediateOperation {
+        private final Function<? super T, ? extends Stream<? extends R>> function;
 
-    private Streamer(Streamer<?> linkedStreamer, Function<Object, ? extends Stream<?>> flatMapMapper) {
-        //Global fields
-        this.linkedStreamer = linkedStreamer;
-        this.externalIterator = null;
-        //Mapper mode fields
-        this.flatMapMapper = flatMapMapper;
+        FlatMapOperation(Function<? super T, ? extends Stream<? extends R>> function) {
+            this.function = function;
+        }
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
-        Objects.requireNonNull(mapper);
+        throwIfNotWaiting();
 
-        throwIfNotWaitingOrSetOperated();
+        intermediateOperations.add(new FlatMapOperation<>(mapper));
 
-        return new Streamer<>(this, (Function<Object, ? extends Stream<R>>) mapper); //todo: как то не красиво выглядит cast
+        return (Streamer<R>) this;
     }
 
-    //other maps
+    //mapToInt()
     @Override
     public IntStream mapToInt(ToIntFunction<? super T> mapper) {
         Objects.requireNonNull(mapper);
@@ -481,6 +470,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                         false);
     }
 
+    //mapToLong()
     @Override
     public LongStream mapToLong(ToLongFunction<? super T> mapper) {
         Objects.requireNonNull(mapper);
@@ -511,6 +501,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                         false);
     }
 
+    //mapToDouble()
     @Override
     public DoubleStream mapToDouble(ToDoubleFunction<? super T> mapper) {
         Objects.requireNonNull(mapper);
@@ -541,6 +532,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                         false);
     }
 
+    //flatMapToInt()
     @Override
     public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
         Objects.requireNonNull(mapper);
@@ -579,6 +571,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         );
     }
 
+    //flatMapToLong()
     @Override
     public LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper) {
         Objects.requireNonNull(mapper);
@@ -617,6 +610,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         );
     }
 
+    //flatMapToDouble()
     @Override
     public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
         Objects.requireNonNull(mapper);
