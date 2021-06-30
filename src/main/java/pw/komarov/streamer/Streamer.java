@@ -294,7 +294,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> limit(long maxSize) {
+    public Streamer<T> limit(long maxSize) {
         throwIfNotWaiting();
 
         intermediateOperations.add(new LimitOperation(maxSize));
@@ -318,7 +318,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> skip(long n) {
+    public Streamer<T> skip(long n) {
         throwIfNotWaiting();
 
         intermediateOperations.add(new SkipOperation(n));
@@ -337,7 +337,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> distinct() {
+    public Streamer<T> distinct() {
         throwIfNotWaiting();
 
         intermediateOperations.add(new DistinctOperation());
@@ -360,7 +360,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> filter(Predicate<? super T> predicate) {
+    public Streamer<T> filter(Predicate<? super T> predicate) {
         throwIfNotWaiting();
 
         intermediateOperations.add(new FilterOperation<>(predicate));
@@ -380,7 +380,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> sorted() {
+    public Streamer<T> sorted() {
         throwIfNotWaiting();
 
         intermediateOperations.add(new SortedOperation<>(null));
@@ -390,7 +390,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> sorted(Comparator<? super T> comparator) {
+    public Streamer<T> sorted(Comparator<? super T> comparator) {
         Objects.requireNonNull(comparator);
 
         throwIfNotWaiting();
@@ -412,7 +412,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
+    public <R> Streamer<R> map(Function<? super T, ? extends R> mapper) {
         throwIfNotWaiting();
 
         intermediateOperations.add(new MapOperation<>(mapper));
@@ -422,7 +422,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     //flatMap()
     @Override
-    public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
+    public <R> Streamer<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
         Objects.requireNonNull(mapper);
 
         class IteratorOfR implements Iterator<R> {
@@ -628,7 +628,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     private final List<Consumer<? super T>> peekSequences = new LinkedList<>();
 
     @Override
-    public Stream<T> peek(Consumer<? super T> action) {
+    public Streamer<T> peek(Consumer<? super T> action) {
         throwIfNotWaiting();
 
         peekSequences.add(action);
@@ -640,7 +640,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     private final List<Runnable> onCloseSequences = new LinkedList<>();
 
     @Override
-    public Stream<T> onClose(Runnable closeHandler) {
+    public Streamer<T> onClose(Runnable closeHandler) {
         throwIfNotWaiting();
 
         onCloseSequences.add(closeHandler);
@@ -934,17 +934,17 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     @Override
-    public Stream<T> sequential() {
+    public Streamer<T> sequential() {
         return this;
     }
 
     @Override
-    public Stream<T> unordered() {
+    public Streamer<T> unordered() {
         return this;
     }
 
     @Override
-    public Stream<T> parallel() {
+    public Streamer<T> parallel() {
         throw new UnsupportedOperationException();
     }
 }

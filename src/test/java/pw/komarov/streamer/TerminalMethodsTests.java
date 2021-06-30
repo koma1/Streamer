@@ -14,7 +14,7 @@ class TerminalMethodsTests {
 
     @BeforeEach
     void beforeEach() {
-        streamer = (Streamer<Integer>) Streamer.iterate(1, i -> i + 1).limit(10);
+        streamer = Streamer.iterate(1, i -> i + 1).limit(10);
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
