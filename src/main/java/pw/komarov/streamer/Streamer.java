@@ -652,6 +652,15 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             Terminal methods
     */
 
+    private List<T> finishToList() {
+        List<T> result = new ArrayList<>();
+
+        while (streamerIterator.hasNext())
+            result.add(streamerIterator.next());
+
+        return result;
+    }
+
     @Override
     public Iterator<T> iterator() {
         throwIfNotWaitingOrSetOperated();
@@ -661,35 +670,51 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public boolean anyMatch(Predicate<? super T> predicate) {
+        Objects.requireNonNull(predicate);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            while (streamerIterator.hasNext())
+                if (predicate.test(streamerIterator.next()))
+                    return true;
 
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+            return false;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
     public boolean allMatch(Predicate<? super T> predicate) {
+        Objects.requireNonNull(predicate);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            while (streamerIterator.hasNext())
+                if (!predicate.test(streamerIterator.next()))
+                    return false;
 
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+            return true;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
     public boolean noneMatch(Predicate<? super T> predicate) {
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            while (streamerIterator.hasNext())
+                if (predicate.test(streamerIterator.next()))
+                    return false;
 
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+            return true;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
@@ -701,129 +726,202 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public Optional<T> findAny() {
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
-
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+        try {
+            if (streamerIterator.hasNext())
+                return Optional.of(streamerIterator.next());
+            else
+                return Optional.empty();
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
     public void forEach(Consumer<? super T> action) {
         throwIfNotWaitingOrSetOperated();
 
-        while (streamerIterator.hasNext())
-            action.accept(streamerIterator.next());
+        try {
+            while (streamerIterator.hasNext())
+                action.accept(streamerIterator.next());
+        } finally {
+            internalClose();
+        }
+    }
+
+    @Override
+    public void forEachOrdered(Consumer<? super T> action) {
+        forEach(action);
     }
 
     @Override
     public Optional<T> min(Comparator<? super T> comparator) {
+        Objects.requireNonNull(comparator);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            List<T> list = finishToList();
+            list.sort(comparator);
 
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+            return !list.isEmpty() ? Optional.ofNullable(list.get(0)) : Optional.empty();
+        } finally {
+            internalClose();
+        }
     }
 
+    @SuppressWarnings("RedundantComparatorComparing")
     @Override
     public Optional<T> max(Comparator<? super T> comparator) {
-        throwIfNotWaitingOrSetOperated();
+        Objects.requireNonNull(comparator);
 
-        //todo: терминальные операции...
-
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+        return min(comparator.reversed());
     }
 
     @Override
     public T reduce(T identity, BinaryOperator<T> accumulator) {
+        Objects.requireNonNull(accumulator);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            if (!streamerIterator.hasNext())
+                return identity;
 
-        internalClose();
+            T value = identity;
+            while (streamerIterator.hasNext())
+                value = accumulator.apply(value, streamerIterator.next());
 
-        throw new UnsupportedOperationException("will be soon");
+            return value;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
-    public Optional<T> reduce(BinaryOperator<T> accumulator) {
+    public Optional<T> reduce(BinaryOperator<T> binaryOperator) {
+        Objects.requireNonNull(binaryOperator);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            if (!streamerIterator.hasNext())
+                return Optional.empty();
 
-        internalClose();
+            T value = streamerIterator.next();
+            while (streamerIterator.hasNext())
+                value = binaryOperator.apply(value, streamerIterator.next());
 
-        throw new UnsupportedOperationException("will be soon");
+            return Optional.of(value);
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
     public <U> U reduce(U identity, BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner) {
+        Objects.requireNonNull(accumulator);
+        Objects.requireNonNull(combiner);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            if (!streamerIterator.hasNext())
+                return identity;
 
-        internalClose();
+            T valueT = streamerIterator.next();
+            U valueU = identity;
+            while (streamerIterator.hasNext())
+                valueU = accumulator.apply(valueU, streamerIterator.next());
 
-        throw new UnsupportedOperationException("will be soon");
+            return valueU;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
     public long count() {
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            int count = 0;
 
-        internalClose();
+            for (; streamerIterator.hasNext(); streamerIterator.next())
+                count++;
 
-        throw new UnsupportedOperationException("will be soon");
+            return count;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
     public <R> R collect(Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
+        Objects.requireNonNull(supplier);
+
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            R result = supplier.get();
 
-        internalClose();
+            for (;streamerIterator.hasNext();)
+                accumulator.accept(result, streamerIterator.next());
 
-        throw new UnsupportedOperationException("will be soon");
+            return result;
+        } finally {
+            internalClose();
+        }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <R, A> R collect(Collector<? super T, A, R> collector) {
-        throwIfNotWaitingOrSetOperated();
+        Objects.requireNonNull(collector);
 
-        //todo: терминальные операции...
-
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+        return collect(
+                (Supplier<R>)collector.supplier(),
+                (BiConsumer<R, ? super T>)collector.accumulator(),
+                null
+        );
     }
 
     @Override
     public Object[] toArray() {
         throwIfNotWaitingOrSetOperated();
 
-        //todo: терминальные операции...
+        try {
+            return finishToList().toArray();
+        } finally {
+            internalClose();
+        }
+    }
 
-        internalClose();
+    @SuppressWarnings("SuspiciousToArrayCall")
+    @Override
+    public <A> A[] toArray(IntFunction<A[]> generator) {
+        Objects.requireNonNull(generator);
 
-        throw new UnsupportedOperationException("will be soon");
+        throwIfNotWaitingOrSetOperated();
+
+        try {
+            List<T> list = finishToList();
+
+            A[] result = generator.apply(list.size());
+
+            if (result.length < list.size())
+                throw new IndexOutOfBoundsException("does not fit");
+
+            list.toArray(result);
+
+            return result;
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
-    public <A> A[] toArray(IntFunction<A[]> generator) {
-        throwIfNotWaitingOrSetOperated();
-
-        //todo: терминальные операции...
-
-        internalClose();
-
-        throw new UnsupportedOperationException("will be soon");
+    public Spliterator<T> spliterator() {
+        return Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED);
     }
 
     /*
@@ -837,17 +935,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Stream<T> sequential() {
-        return this; //мы "последовательны", поэтому вернем себя же
-    }
-
-    @Override
-    public void forEachOrdered(Consumer<? super T> action) {
-        forEach(action);
-    }
-
-    @Override
-    public Spliterator<T> spliterator() {
-        return Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED);
+        return this;
     }
 
     @Override
