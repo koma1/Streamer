@@ -417,7 +417,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
         intermediateOperations.add(new MapOperation<>(mapper));
 
-        return (Streamer<R>) this;
+        return (Streamer<R>)Streamer.of(this);
     }
 
     //flatMap()
