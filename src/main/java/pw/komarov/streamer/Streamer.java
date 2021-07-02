@@ -6,14 +6,14 @@ import java.util.stream.*;
 
 @SuppressWarnings({"WeakerAccess","unused","UnusedReturnValue"})
 public final class Streamer<T> implements Stream<T>, Iterable<T> {
-    private Iterator<T> externalIterator; //source of data
-
     /*
             Constructing
     */
 
+    private final StreamerIterator streamerIterator;
+
     private Streamer(Iterator<T> externalIterator) {
-        this.externalIterator = externalIterator;
+        this.streamerIterator = new StreamerIterator(externalIterator);
     }
 
     public static <T> Streamer<T> empty() {
@@ -129,7 +129,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     private void internalClose() {
-        externalIterator = null;
+        streamerIterator.setExternalIterator(null);
 
         state = State.CLOSED;
     }
@@ -149,9 +149,15 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             Internal streamer iterator
     */
 
-    private final StreamerIterator streamerIterator = new StreamerIterator();
-
     private class StreamerIterator implements Iterator<T> {
+        private Iterator<T> externalIterator; //source of data
+
+        public StreamerIterator(Iterator<T> externalIterator) {
+            this.externalIterator = externalIterator;
+        }
+
+        private boolean noNext;
+
         private Boolean hasNext;
         private T next;
 
@@ -214,7 +220,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                     data.sort(sortedOperation.comparator);
 
                 //now, we can replace the iterator
-                externalIterator = data.iterator();
+                setExternalIterator(data.iterator());
             }
         }
 
@@ -230,10 +236,9 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         @SuppressWarnings({"unchecked"})
         private Optional<T> getNext(List<IntermediateOperation> operations) {
             T next = null;
-            boolean terminated = false;
 
-            boolean hasNext = externalIterator.hasNext();
-            while (hasNext && !terminated) {
+            boolean hasNext = !noNext && externalIterator.hasNext();
+            while (hasNext) {
                 next = externalIterator.next();
 
                 boolean filtered = false;
@@ -241,8 +246,10 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                     if (operation instanceof FilteringOperation) {
                         if (!filtered) {
                             filtered = ((FilteringOperation) operation).test(next);
-                            if (filtered && operation instanceof LimitOperation)
-                                terminated = true;
+                            if (filtered && operation instanceof LimitOperation) {
+                                filtered = false;
+                                noNext = true;
+                            }
                         }
                     } else if (operation instanceof MapOperation)
                         next = (T) ((MapOperation)operation).function.apply(next);
@@ -255,7 +262,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                     hasNext = externalIterator.hasNext();
             }
 
-            if (hasNext && !terminated) {
+            if (hasNext) {
                 for (Consumer<? super T> peekSequence : peekSequences)
                     peekSequence.accept(next);
 
@@ -264,6 +271,11 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
             //noinspection OptionalAssignedToNull
             return null;
+        }
+
+        public void setExternalIterator(Iterator<T> externalIterator) {
+            this.externalIterator = externalIterator;
+            noNext = false;
         }
     }
 
@@ -289,7 +301,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
         @Override
         public boolean test(E t) {
-            return maxSize < ++filteredByLimit;
+            return maxSize < ++filteredByLimit + 1;
         }
     }
 
