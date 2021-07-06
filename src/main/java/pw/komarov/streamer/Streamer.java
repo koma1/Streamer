@@ -40,6 +40,18 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return from(iterable.iterator());
     }
 
+    public static <K,V> Streamer<Map.Entry<K,V>> from(Map<K,V> map) {
+        return from(map.entrySet());
+    }
+
+    public static <K> Streamer<K> fromMapKeys(Map<K,?> map) {
+        return from(map.keySet());
+    }
+
+    public static <V> Streamer<V> fromMapValues(Map<?,V> map) {
+        return from(map.values());
+    }
+
     public static <E> Streamer<E> from(Iterator<E> iterator) {
         return new Streamer<>(iterator);
     }
