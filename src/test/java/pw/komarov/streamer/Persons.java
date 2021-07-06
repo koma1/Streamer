@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@SuppressWarnings("WeakerAccess")
 class Person {
     private final static AtomicInteger idGenerator = new AtomicInteger();
 
@@ -14,6 +15,18 @@ class Person {
     final String name;
     final Gender gender;
     final int age;
+
+    public String getName() {
+        return name;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public int getAge() {
+        return age;
+    }
 
     final Date createdAt = new Date();
 
@@ -60,7 +73,7 @@ class PersonUtils {
                 isMale
                         ? Person.Gender.MALE
                         : Person.Gender.FEMALE,
-                ThreadLocalRandom.current().nextInt(10) + 25
+                ThreadLocalRandom.current().nextInt(60) + 20
         );
     }
 
