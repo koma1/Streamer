@@ -10,10 +10,10 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             Constructing
     */
 
-    private final StreamerIterator streamerIterator;
+    private final InternalStreamerIterator streamerIterator;
 
-    private Streamer(Iterator<T> externalIterator) {
-        this.streamerIterator = new StreamerIterator(externalIterator);
+    private Streamer(Iterator<T> sourceIterator) {
+        this.streamerIterator = new InternalStreamerIterator(sourceIterator);
     }
 
     public static <T> Streamer<T> empty() {
@@ -141,7 +141,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     private void internalClose() {
-        streamerIterator.setExternalIterator(null);
+        streamerIterator.setSourceIterator(null);
 
         state = State.CLOSED;
     }
@@ -161,11 +161,11 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             Internal streamer iterator
     */
 
-    private class StreamerIterator implements Iterator<T> {
-        private Iterator<T> externalIterator; //source of data
+    private class InternalStreamerIterator implements Iterator<T> {
+        private Iterator<T> sourceIterator; //source of data
 
-        public StreamerIterator(Iterator<T> externalIterator) {
-            this.externalIterator = externalIterator;
+        public InternalStreamerIterator(Iterator<T> sourceIterator) {
+            this.sourceIterator = sourceIterator;
         }
 
         private boolean noNext;
@@ -232,7 +232,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                     data.sort(sortedOperation.comparator);
 
                 //now, we can replace the iterator
-                setExternalIterator(data.iterator());
+                setSourceIterator(data.iterator());
             }
         }
 
@@ -249,9 +249,9 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         private Optional<T> getNext(List<IntermediateOperation> operations) {
             T next = null;
 
-            boolean hasNext = !noNext && externalIterator.hasNext();
+            boolean hasNext = !noNext && sourceIterator.hasNext();
             while (hasNext) {
-                next = externalIterator.next();
+                next = sourceIterator.next();
 
                 boolean filtered = false;
                 for (IntermediateOperation operation : operations)
@@ -271,7 +271,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                 if (!filtered)
                     break;
                 else
-                    hasNext = externalIterator.hasNext();
+                    hasNext = sourceIterator.hasNext();
             }
 
             if (hasNext) {
@@ -285,8 +285,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             return null;
         }
 
-        public void setExternalIterator(Iterator<T> externalIterator) {
-            this.externalIterator = externalIterator;
+        public void setSourceIterator(Iterator<T> sourceIterator) {
+            this.sourceIterator = sourceIterator;
             noNext = false;
         }
     }
