@@ -160,7 +160,7 @@ class TerminalMethodsTests {
 
         int amount;
 
-        amount = Streamer.of(salaries.entrySet())
+        amount = Streamer.from(salaries.entrySet())
                 .reduce(
                         0,
                         (total, entry) -> entry.getValue() < 30000 ? total + entry.getValue() : total,
@@ -168,7 +168,7 @@ class TerminalMethodsTests {
         assertEquals(amountForeach, amount);
 
         salaries.clear();
-        amount = Streamer.of(salaries.entrySet())
+        amount = Streamer.from(salaries.entrySet())
                 .reduce(
                         0,
                         (total, entry) -> entry.getValue() < 30000 ? total + entry.getValue() : total,

@@ -33,14 +33,14 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @SafeVarargs
     public static <E> Streamer<E> of(E... args) {
-        return of(Arrays.asList(args));
+        return from(Arrays.asList(args));
     }
 
-    public static <E> Streamer<E> of(Iterable<E> iterable) {
-        return of(iterable.iterator());
+    public static <E> Streamer<E> from(Iterable<E> iterable) {
+        return from(iterable.iterator());
     }
 
-    public static <E> Streamer<E> of(Iterator<E> iterator) {
+    public static <E> Streamer<E> from(Iterator<E> iterator) {
         return new Streamer<>(iterator);
     }
 
@@ -70,7 +70,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     public static <E> Streamer<E> generate(Supplier<E> supplier) {
-        return of(new InfiniteGenerator<>(supplier));
+        return from(new InfiniteGenerator<>(supplier));
     }
 
     public static class InfiniteIterator<E> extends AbstractInfiniteIterator<E> {
@@ -92,7 +92,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     public static <E> Streamer<E> iterate(E initial, UnaryOperator<E> unaryOperator) {
-        return of(new InfiniteIterator<>(initial, unaryOperator));
+        return from(new InfiniteIterator<>(initial, unaryOperator));
     }
 
     /*
@@ -429,7 +429,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
         intermediateOperations.add(new MapOperation<>(mapper));
 
-        return (Streamer<R>)Streamer.of(this);
+        return (Streamer<R>)Streamer.from(this);
     }
 
     //flatMap()
@@ -459,7 +459,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             }
         }
 
-        return Streamer.of(new IteratorOfR());
+        return Streamer.from(new IteratorOfR());
     }
 
     @Override
