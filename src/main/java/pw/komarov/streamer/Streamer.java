@@ -40,6 +40,10 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return from(iterable.iterator());
     }
 
+    public static <E> Streamer<E> from(Iterator<E> iterator) {
+        return new Streamer<>(iterator);
+    }
+
     public static <K,V> Streamer<Map.Entry<K,V>> from(Map<K,V> map) {
         return from(map.entrySet());
     }
@@ -50,10 +54,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     public static <V> Streamer<V> fromMapValues(Map<?,V> map) {
         return from(map.values());
-    }
-
-    public static <E> Streamer<E> from(Iterator<E> iterator) {
-        return new Streamer<>(iterator);
     }
 
     private static abstract class AbstractInfiniteIterator<E> implements Iterator<E> {
@@ -127,10 +127,10 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             try {
                 runnable.run();
             } catch (RuntimeException e) {
-                if (rte == null) //если это первое исключение в цепочке...
-                    rte = e; //...сохраним его
-                else //если не первое...
-                    rte.addSuppressed(e); //...сохраним его в suppressed первого
+                if (rte == null) //if it first exception
+                    rte = e; //...save it
+                else //if not first...
+                    rte.addSuppressed(e); //...save it in suppressed
             } finally {
                 iterator.remove();
             }
@@ -236,7 +236,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             }
         }
 
-        private void calcNextAndHasNext() { //метод расчитывающий внутренние, закрытые поля next и hasNext на основании расчитанного опционала
+        private void calcNextAndHasNext() { //calculating next and getNext
             Optional<T> opt = getNext(intermediateOperations);
 
             //noinspection OptionalAssignedToNull
@@ -450,9 +450,9 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         Objects.requireNonNull(mapper);
 
         class IteratorOfR implements Iterator<R> {
-            private final Iterator<T> OfT = Streamer.this.iterator(); //родительский итератор (содержит элементы множества)
+            private final Iterator<T> ofT = Streamer.this.iterator(); //parent iterator
 
-            private Iterator<? extends R> ofR; //элементы подмножества Stream<R> которые будем возвращать клиенту
+            private Iterator<? extends R> ofR; //SubElements
 
             @Override
             public R next() {
@@ -464,8 +464,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
             @Override
             public boolean hasNext() {
-                while ((ofR == null || !ofR.hasNext()) && OfT.hasNext()) //если ofR не задан (напр.: первый запрос), или в ofR отсутствуют элементы и при этом есть что раскладывать в родительском (ofT)...
-                    ofR = mapper.apply(OfT.next()).iterator(); //...разложим элемент из ofT на подмножество ofR
+                while ((ofR == null || !ofR.hasNext()) && ofT.hasNext()) //if ofR not set (ex: first req) or ofR empty and ofT it have...
+                    ofR = mapper.apply(ofT.next()).iterator(); //divide ofT...
 
                 return ofR != null && ofR.hasNext();
             }
@@ -970,5 +970,52 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     @Override
     public Streamer<T> parallel() {
         throw new UnsupportedOperationException();
+    }
+
+    /*
+            Additional
+    */
+
+    public Number sum(Function<T, Number> toNumberMapper) { //not fast, but helpful...
+        Objects.requireNonNull(toNumberMapper);
+
+        throwIfNotWaitingOrSetOperated();
+
+        double doubleResult = 0d;
+        long longResult = 0;
+
+        try {
+            while (streamerIterator.hasNext()) {
+                T next = streamerIterator.next();
+                doubleResult+=toNumberMapper.apply(next).doubleValue();
+                longResult+=toNumberMapper.apply(next).longValue();
+            }
+
+            if (longResult == doubleResult) {
+                if (longResult <= Integer.MAX_VALUE && !(longResult < Integer.MIN_VALUE))
+                    return (int)longResult;
+                else
+                    return longResult;
+            } else
+                return doubleResult;
+        } finally {
+            internalClose();
+        }
+    }
+
+    public Number sum() { //not fast, but helpful...
+        return sum(o -> o != null ? (Number)o : 0);
+    }
+
+    public <K> Map<K,Collection<T>> groupBy(Function<? super T,? extends K> groupMapper) {
+        return collect(HashMap::new,
+                (map, object) -> map.merge(
+                        groupMapper.apply(object),
+                        new ArrayList<>(Collections.singletonList(object)),
+                        ((left, right) -> {
+                            left.addAll(right);
+                            return left;
+                        }) ),
+                null);
     }
 }
