@@ -10,7 +10,12 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             Constructing
     */
 
-    private final InternalStreamerIterator streamerIterator;
+    private InternalStreamerIterator streamerIterator;
+    private Iterable<T> sourceIterable;
+
+    private Streamer(Iterable<T> iterable) {
+        this.sourceIterable = iterable;
+    }
 
     private Streamer(Iterator<T> sourceIterator) {
         this.streamerIterator = new InternalStreamerIterator(sourceIterator);
@@ -37,7 +42,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     public static <E> Streamer<E> from(Iterable<E> iterable) {
-        return from(iterable.iterator());
+        return new Streamer<>(iterable);
     }
 
     public static <E> Streamer<E> from(Iterator<E> iterator) {
@@ -150,6 +155,11 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         throwIfNotWaiting();
 
         state = State.OPERATED;
+
+        if (streamerIterator == null && sourceIterable != null) {
+            streamerIterator = new InternalStreamerIterator(sourceIterable.iterator());
+            sourceIterable = null;
+        }
     }
 
     private void throwIfNotWaiting() {
@@ -441,7 +451,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
         intermediateOperations.add(new MapOperation<>(mapper));
 
-        return (Streamer<R>)Streamer.from(this);
+        return (Streamer<R>)Streamer.from(this.iterator());
     }
 
     //flatMap()
