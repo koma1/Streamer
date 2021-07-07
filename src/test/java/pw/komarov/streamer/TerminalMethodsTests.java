@@ -145,30 +145,55 @@ class TerminalMethodsTests {
         assertThrows(IllegalStateException.class, () -> streamer.reduce((total, current) -> total - current));
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
-    void reduce3Test() {
+    void reduce3RandomsTest() {
         Map<Person, Integer> salaries = new HashMap<>();
 
-        for (int i = 1; i <= 10; i++)
-            salaries.put(PersonUtils.generateRandomPerson(), ThreadLocalRandom.current().nextInt(1000) * 100);
+        Streamer.generate(PersonUtils::generateRandomPerson).limit(10).forEach(
+                person -> salaries.put(person, ThreadLocalRandom.current().nextInt(1000) * 100)
+        );
 
-        int amountForeach = 0;
-        for (Person person : salaries.keySet())
-            if (salaries.get(person) < 30000)
-                amountForeach+=salaries.get(person);
+        reduce3Test(salaries);
+    }
+
+    @Test
+    void reduce3FixedTest() {
+        Map<Person, Integer> salaries = new HashMap<>();
+
+        salaries.put(new Person("Василиса Малышева", Person.Gender.FEMALE, 34), 14400);
+        salaries.put(new Person("Алексей Пышов", Person.Gender.MALE, 29), 76000);
+        salaries.put(new Person("Вячеслав Лукоянов", Person.Gender.MALE, 33), 66100);
+        salaries.put(new Person("Михаил Максимов", Person.Gender.MALE, 27), 17700);
+        salaries.put(new Person("Алексей Максимов", Person.Gender.MALE, 33), 55600);
+        salaries.put(new Person("Евгений Братков", Person.Gender.MALE, 25), 74600);
+        salaries.put(new Person("Вячеслав Лукоянов", Person.Gender.MALE, 27), 700);
+        salaries.put(new Person("Марк Максимов", Person.Gender.MALE, 26), 62000);
+        salaries.put(new Person("Михаил Митрофанов", Person.Gender.MALE, 30), 26000);
+        salaries.put(new Person("Василиса Хлынева", Person.Gender.FEMALE, 26), 35700);
+
+        reduce3Test(salaries);
+    }
+
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    void reduce3Test(Map<Person, Integer> salaries) {
+        System.out.println("salaries=" + salaries);
+
+
+        long amountForeach = Streamer.fromMapValues(salaries).filter(salary -> salary < 30000).sum().longValue();
 
         int amount;
 
-        amount = Streamer.from(salaries.entrySet())
+        amount = salaries.entrySet().stream()
                 .reduce(
                         0,
                         (total, entry) -> entry.getValue() < 30000 ? total + entry.getValue() : total,
-                        (total, current) -> total + current);
+                        (total, current) -> 0);
         assertEquals(amountForeach, amount);
 
         salaries.clear();
-        amount = Streamer.from(salaries.entrySet())
+
+        amount = salaries.entrySet().stream()
                 .reduce(
                         0,
                         (total, entry) -> entry.getValue() < 30000 ? total + entry.getValue() : total,
