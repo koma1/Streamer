@@ -2,4 +2,4 @@
 Streamer.iml
 .idea/
 #Maven
-.target/
+target/
