@@ -297,6 +297,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
         public void setSourceIterator(Iterator<T> sourceIterator) {
             this.sourceIterator = sourceIterator;
+
             noNext = false;
         }
     }
@@ -907,16 +908,22 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <R, A> R collect(Collector<? super T, A, R> collector) {
         Objects.requireNonNull(collector);
 
-        return collect(
-                (Supplier<R>)collector.supplier(),
-                (BiConsumer<R, ? super T>)collector.accumulator(),
-                null
-        );
+        throwIfNotWaitingOrSetOperated();
+
+        try {
+            A accumulator = collector.supplier().get();
+
+            while (streamerIterator.hasNext())
+                collector.accumulator().accept(accumulator, streamerIterator.next());
+
+            return collector.finisher().apply(accumulator);
+        } finally {
+            internalClose();
+        }
     }
 
     @Override
