@@ -1,5 +1,7 @@
 package pw.komarov.streamer;
 
+import pw.komarov.utils.NullableValue;
+
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
@@ -213,7 +215,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             return next;
         }
 
-        @SuppressWarnings({"OptionalAssignedToNull","unchecked"})
+        @SuppressWarnings("unchecked")
         private void calculateSorted() {
             for (int i = 1; i <= sortedCount; i++) {
                 //building local operations list (from general operations list, by extracting sublist)
@@ -234,13 +236,13 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
                 //data collecting
                 final List<T> data = new ArrayList<>();
-                Optional<T> nextOpt;
+                NullableValue<T> nextValue;
                 do {
-                    nextOpt = getNext(localOperations);
-                    if (nextOpt != null)
-                        data.add(nextOpt.orElse(null));
+                    nextValue = getNext(localOperations);
+                    if (nextValue != null)
+                        data.add(nextValue.get());
 
-                } while (nextOpt != null);
+                } while (nextValue != null);
 
                 //sorting...
                 if (sortedOperation != null)
@@ -252,16 +254,15 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
 
         private void calcNextAndHasNext() { //calculating next and getNext
-            Optional<T> opt = getNext(intermediateOperations);
+            NullableValue<T> nextValue = getNext(intermediateOperations);
 
-            //noinspection OptionalAssignedToNull
-            hasNext = opt != null;
+            hasNext = nextValue != null;
             if (hasNext)
-                next = opt.orElse(null);
+                next = nextValue.get();
         }
 
         @SuppressWarnings({"unchecked"})
-        private Optional<T> getNext(List<IntermediateOperation> operations) {
+        private NullableValue<T> getNext(List<IntermediateOperation> operations) {
             T next = null;
 
             boolean hasNext = !noNext && sourceIterator.hasNext();
@@ -293,10 +294,9 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                 for (Consumer<? super T> peekSequence : peekSequences)
                     peekSequence.accept(next);
 
-                return Optional.ofNullable(next);
+                return NullableValue.of(next);
             }
 
-            //noinspection OptionalAssignedToNull
             return null;
         }
 
