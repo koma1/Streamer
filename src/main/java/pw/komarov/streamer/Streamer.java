@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
-@SuppressWarnings({"WeakerAccess","unused","UnusedReturnValue"})
 public final class Streamer<T> implements Stream<T>, Iterable<T> {
     /*
             Constructing
@@ -21,6 +20,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         this.streamerIterator = new InternalStreamerIterator(sourceIterator);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <T> Streamer<T> empty() {
         return
                 new Streamer<>(new Iterator<T>() {
@@ -45,18 +45,22 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return new Streamer<>(iterable);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <E> Streamer<E> from(Iterator<E> iterator) {
         return new Streamer<>(iterator);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <K,V> Streamer<Map.Entry<K,V>> from(Map<K,V> map) {
         return from(map.entrySet());
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <K> Streamer<K> fromMapKeys(Map<K,?> map) {
         return from(map.keySet());
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <V> Streamer<V> fromMapValues(Map<?,V> map) {
         return from(map.values());
     }
@@ -108,6 +112,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <E> Streamer<E> iterate(E initial, UnaryOperator<E> unaryOperator) {
         return from(new InfiniteIterator<>(initial, unaryOperator));
     }
@@ -174,7 +179,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     private class InternalStreamerIterator implements Iterator<T> {
         private Iterator<T> sourceIterator; //source of data
 
-        public InternalStreamerIterator(Iterator<T> sourceIterator) {
+        InternalStreamerIterator(Iterator<T> sourceIterator) {
             this.sourceIterator = sourceIterator;
         }
 
@@ -295,7 +300,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             return null;
         }
 
-        public void setSourceIterator(Iterator<T> sourceIterator) {
+        void setSourceIterator(Iterator<T> sourceIterator) {
             this.sourceIterator = sourceIterator;
 
             noNext = false;
@@ -384,7 +389,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     private static class FilterOperation<T> implements FilteringOperation<T> {
         private final Predicate<? super T> predicate;
 
-        public FilterOperation(Predicate<? super T> predicate) {
+        FilterOperation(Predicate<? super T> predicate) {
             this.predicate = predicate;
         }
 
@@ -409,7 +414,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public static class SortedOperation<T> implements IntermediateOperation {
         private final Comparator<? super T> comparator;
 
-        public SortedOperation(Comparator<? super T> comparator) {
+        SortedOperation(Comparator<? super T> comparator) {
             this.comparator = comparator;
         }
     }
@@ -863,7 +868,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             if (!streamerIterator.hasNext())
                 return identity;
 
-            T valueT = streamerIterator.next();
             U valueU = identity;
             while (streamerIterator.hasNext())
                 valueU = accumulator.apply(valueU, streamerIterator.next());
@@ -993,7 +997,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             Additional
     */
 
-    public Number sum(Function<T, Number> toNumberMapper) { //not fast, but helpful...
+    @SuppressWarnings("WeakerAccess")
+    public Number sum(Function<T, Number> toNumberMapper) {
         Objects.requireNonNull(toNumberMapper);
 
         throwIfNotWaitingOrSetOperated();
@@ -1020,10 +1025,12 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public Number sum() { //not fast, but helpful...
         return sum(o -> o != null ? (Number)o : 0);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public <K> Map<K,Collection<T>> groupBy(Function<? super T,? extends K> groupMapper) {
         return collect(HashMap::new,
                 (map, object) -> map.merge(

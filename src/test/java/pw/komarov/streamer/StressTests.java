@@ -1,7 +1,8 @@
 package pw.komarov.streamer;
 
 import org.junit.jupiter.api.Test;
-import java.util.Comparator;
+
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,5 +43,30 @@ class StressTests {
                 .toArray();
 
         assertArrayEquals(new int[]{1,1,2,3,5,8,13,21,34,55}, actual);
+    }
+
+    @Test
+    void emptyTest() {
+        assertEquals(0, Streamer.empty().count());
+    }
+
+    @Test
+    void fromMapTest() {
+        Map<Integer,Integer> map = new HashMap<>();
+        map.put(1, 1);
+        map.put(2, 2);
+        map.put(3, 3);
+
+        assertArrayEquals(new Integer[]{1, 2, 3}, Streamer.from(map).map(Map.Entry::getKey).toArray());
+        assertArrayEquals(new Integer[]{1, 2, 3}, Streamer.fromMapKeys(map).toArray());
+        assertArrayEquals(new Integer[]{1, 2, 3}, Streamer.fromMapValues(map).toArray());
+    }
+
+    @Test
+    void groupByTest() {
+        Map<Boolean, Collection<Integer>> grouped = Streamer.of(1, 2, 3, 4).groupBy(integer -> integer % 2 == 0);
+
+        assertArrayEquals(new Integer[]{1, 3}, grouped.get(false).toArray());
+        assertArrayEquals(new Integer[]{2, 4}, grouped.get(true).toArray());
     }
 }
