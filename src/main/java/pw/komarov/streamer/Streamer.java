@@ -158,7 +158,12 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         state = State.CLOSED;
     }
 
-    private void throwIfNotWaitingOrSetOperated() {
+    private void throwIfNotWaiting() {
+        if (state != State.WAITING)
+            throw new IllegalStateException("stream has already been operated upon or closed");
+    }
+
+    private void prepareRun() {
         throwIfNotWaiting();
 
         state = State.OPERATED;
@@ -167,11 +172,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             streamerIterator = new InternalStreamerIterator(sourceIterable.iterator());
             sourceIterable = null;
         }
-    }
-
-    private void throwIfNotWaiting() {
-        if (state != State.WAITING)
-            throw new IllegalStateException("stream has already been operated upon or closed");
     }
 
     /*
@@ -703,7 +703,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Iterator<T> iterator() {
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         return streamerIterator;
     }
@@ -712,7 +712,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public boolean anyMatch(Predicate<? super T> predicate) {
         Objects.requireNonNull(predicate);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             while (streamerIterator.hasNext())
@@ -729,7 +729,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public boolean allMatch(Predicate<? super T> predicate) {
         Objects.requireNonNull(predicate);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             while (streamerIterator.hasNext())
@@ -744,7 +744,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public boolean noneMatch(Predicate<? super T> predicate) {
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             while (streamerIterator.hasNext())
@@ -764,7 +764,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Optional<T> findAny() {
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             if (streamerIterator.hasNext())
@@ -778,7 +778,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public void forEach(Consumer<? super T> action) {
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             while (streamerIterator.hasNext())
@@ -797,7 +797,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public Optional<T> min(Comparator<? super T> comparator) {
         Objects.requireNonNull(comparator);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             List<T> list = finishToList();
@@ -821,7 +821,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public T reduce(T identity, BinaryOperator<T> accumulator) {
         Objects.requireNonNull(accumulator);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             if (!streamerIterator.hasNext())
@@ -841,7 +841,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public Optional<T> reduce(BinaryOperator<T> binaryOperator) {
         Objects.requireNonNull(binaryOperator);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             if (!streamerIterator.hasNext())
@@ -862,7 +862,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         Objects.requireNonNull(accumulator);
         Objects.requireNonNull(combiner);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             if (!streamerIterator.hasNext())
@@ -880,7 +880,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public long count() {
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             int count = 0;
@@ -898,7 +898,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public <R> R collect(Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
         Objects.requireNonNull(supplier);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             R result = supplier.get();
@@ -916,7 +916,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public <R, A> R collect(Collector<? super T, A, R> collector) {
         Objects.requireNonNull(collector);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             A accumulator = collector.supplier().get();
@@ -932,7 +932,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     @Override
     public Object[] toArray() {
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             return finishToList().toArray();
@@ -946,7 +946,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public <A> A[] toArray(IntFunction<A[]> generator) {
         Objects.requireNonNull(generator);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         try {
             List<T> list = finishToList();
@@ -1001,7 +1001,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     public Number sum(Function<T, Number> toNumberMapper) {
         Objects.requireNonNull(toNumberMapper);
 
-        throwIfNotWaitingOrSetOperated();
+        prepareRun();
 
         double doubleResult = 0d;
         long longResult = 0;
