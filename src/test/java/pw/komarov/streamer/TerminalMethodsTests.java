@@ -102,8 +102,8 @@ class TerminalMethodsTests {
         assertArrayEquals(new Integer[]{1,2,3,4,5,6,7,8,9,10}, streamer.collect(
                 ArrayList::new,
                 (ArrayList::add),
-                null )
-                .toArray());
+                null)
+            .toArray());
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -177,9 +177,9 @@ class TerminalMethodsTests {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     void reduce3Test(Map<Person, Integer> salaries) {
-        long amountForeach = Streamer.fromMapValues(salaries).filter(salary -> salary < 30000).sum().longValue();
+        long amountForeach = Streamer.fromMapValues(salaries).filter(salary -> salary < 30000).mapToLong(Integer::longValue).sum();
 
-        int amount;
+        long amount;
 
         amount = salaries.entrySet().stream()
                 .reduce(

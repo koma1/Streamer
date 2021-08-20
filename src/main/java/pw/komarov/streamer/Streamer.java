@@ -999,39 +999,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     */
 
     @SuppressWarnings("WeakerAccess")
-    public Number sum(Function<T, Number> toNumberMapper) {
-        Objects.requireNonNull(toNumberMapper);
-
-        prepareRun();
-
-        double doubleResult = 0d;
-        long longResult = 0;
-
-        try {
-            while (streamerIterator.hasNext()) {
-                T next = streamerIterator.next();
-                doubleResult+=toNumberMapper.apply(next).doubleValue();
-                longResult+=toNumberMapper.apply(next).longValue();
-            }
-
-            if (longResult == doubleResult) {
-                if (longResult <= Integer.MAX_VALUE && !(longResult < Integer.MIN_VALUE))
-                    return (int)longResult;
-                else
-                    return longResult;
-            } else
-                return doubleResult;
-        } finally {
-            internalClose();
-        }
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public Number sum() { //not fast, but helpful...
-        return sum(o -> o != null ? (Number)o : 0);
-    }
-
-    @SuppressWarnings("WeakerAccess")
     public <K> Map<K,Collection<T>> groupBy(Function<? super T,? extends K> groupMapper) {
         return collect(HashMap::new,
                 (map, object) -> map.merge(
