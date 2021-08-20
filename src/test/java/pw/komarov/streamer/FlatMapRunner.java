@@ -9,7 +9,7 @@ public class FlatMapRunner {
             Streamer
                     .generate(() -> {
                         new Sleep(500);
-                        return PersonUtils.generateRandomPerson(); //generated person
+                        return Person.Utils.generateRandomPerson(); //generated person
                     }).limit(10) //ten persons is enough
             .flatMap(person -> Streamer.of(
                     "---------------------",
@@ -25,7 +25,7 @@ public class FlatMapRunner {
         Streamer
                 .generate(() -> {
                     new Sleep(500);
-                    return PersonUtils.generateRandomPerson(); //generated person
+                    return Person.Utils.generateRandomPerson(); //generated person
                 }).limit(10) //ten persons is enough
                 .flatMap(person -> {
                     if ((ai.incrementAndGet() & 1) == 0)

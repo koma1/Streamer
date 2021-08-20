@@ -66,7 +66,7 @@ class TerminalMethodsTests {
     void forEachTest() {
         List<Integer> integers = new ArrayList<>();
         streamer.forEach(integers::add);
-        assertArrayEquals(new Integer[]{1,2,3,4,5,6,7,8,9,10}, integers.toArray());
+        assertArrayEquals(new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, integers.toArray());
 
         assertThrows(IllegalStateException.class, () -> streamer.forEach(null));
     }
@@ -100,9 +100,9 @@ class TerminalMethodsTests {
 
         beforeEach();
         assertArrayEquals(new Integer[]{1,2,3,4,5,6,7,8,9,10}, streamer.collect(
-                    ArrayList::new,
-                    (ArrayList::add),
-                    null )
+                ArrayList::new,
+                (ArrayList::add),
+                null )
                 .toArray());
     }
 
@@ -149,7 +149,7 @@ class TerminalMethodsTests {
     void reduce3RandomsTest() {
         Map<Person, Integer> salaries = new HashMap<>();
 
-        Streamer.generate(PersonUtils::generateRandomPerson).limit(10).forEach(
+        Streamer.generate(Person.Utils::generateRandomPerson).limit(10).forEach(
                 person -> salaries.put(person, ThreadLocalRandom.current().nextInt(1000) * 100)
         );
 
@@ -177,9 +177,6 @@ class TerminalMethodsTests {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     void reduce3Test(Map<Person, Integer> salaries) {
-        System.out.println("salaries=" + salaries);
-
-
         long amountForeach = Streamer.fromMapValues(salaries).filter(salary -> salary < 30000).sum().longValue();
 
         int amount;

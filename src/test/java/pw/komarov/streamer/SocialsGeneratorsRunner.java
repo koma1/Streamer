@@ -7,7 +7,7 @@ public class SocialsGeneratorsRunner {
         //Армейский призыв
         System.out.println("Армейский призыв:");
         Streamer
-                .generate(PersonUtils::generateRandomPerson) //сгенерируем персону
+                .generate(Person.Utils::generateRandomPerson) //сгенерируем персону
                 .filter(person -> person.gender == Person.Gender.MALE) //отберем по полу
                 .filter(person -> person.age >= 18 && person.age <= 27) //отберем по возрасту
                 .limit(10) //остановим генерацию, когда набрали 10 подходящих "кандидатов"
@@ -20,7 +20,7 @@ public class SocialsGeneratorsRunner {
         System.out.println("----------------\nПенсионеры:");
         System.out.println();
         Streamer
-                .generate(PersonUtils::generateRandomPerson)
+                .generate(Person.Utils::generateRandomPerson)
                 .filter(person ->
                         (person.gender == Person.Gender.MALE && person.age >= 63)
                                 ||
