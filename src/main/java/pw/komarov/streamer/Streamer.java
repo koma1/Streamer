@@ -168,6 +168,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
         state = State.OPERATED;
 
+        //preparing delayed run from Iterable<> source
         if (streamerIterator == null && sourceIterable != null) {
             streamerIterator = new InternalStreamerIterator(sourceIterable.iterator());
             sourceIterable = null;
