@@ -1,4 +1,4 @@
-package pw.komarov.streamer;
+package pw.komarov.streams;
 
 import java.util.ArrayList;
 import java.util.Date;

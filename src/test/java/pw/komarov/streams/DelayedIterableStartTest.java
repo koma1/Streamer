@@ -1,6 +1,5 @@
-package pw.komarov.streamer;
+package pw.komarov.streams;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

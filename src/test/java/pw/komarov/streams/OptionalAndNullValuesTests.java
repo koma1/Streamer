@@ -1,4 +1,4 @@
-package pw.komarov.streamer;
+package pw.komarov.streams;
 
 import static org.junit.jupiter.api.Assertions.*;
 

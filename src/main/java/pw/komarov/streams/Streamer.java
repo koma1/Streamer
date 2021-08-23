@@ -1,4 +1,4 @@
-package pw.komarov.streamer;
+package pw.komarov.streams;
 
 import pw.komarov.utils.NullableValue;
 
@@ -176,7 +176,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     }
 
     /*
-            Internal streamer iterator
+            Internal streams iterator
     */
 
     private class InternalStreamerIterator implements Iterator<T> {
@@ -345,8 +345,8 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
     //skip()
     private static class SkipOperation implements FilteringOperation {
-        private final long totalCount; //Total elements count, that streamer must skip
-        private long processedCount; //elements count that streamer was skipped
+        private final long totalCount; //Total elements count, that streams must skip
+        private long processedCount; //elements count that streams was skipped
 
         SkipOperation(long totalCount) {
             this.totalCount = totalCount;
