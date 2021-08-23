@@ -43,6 +43,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return from(Arrays.asList(args));
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <E> Streamer<E> from(Iterable<E> iterable) {
         return new Streamer<>(iterable);
     }
@@ -92,6 +93,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static <E> Streamer<E> generate(Supplier<E> supplier) {
         return from(new InfiniteGenerator<>(supplier));
     }
