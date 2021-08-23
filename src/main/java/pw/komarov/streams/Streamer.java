@@ -806,7 +806,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
             List<T> list = finishToList();
             list.sort(comparator);
 
-            return !list.isEmpty() ? Optional.ofNullable(list.get(0)) : Optional.empty();
+            return !list.isEmpty() ? Optional.of(list.get(0)) : Optional.empty();
         } finally {
             internalClose();
         }
