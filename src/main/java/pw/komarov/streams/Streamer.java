@@ -274,7 +274,10 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
 
                 //sorting...
                 if (sortedOperation != null)
-                    data.sort(sortedOperation.comparator);
+                    if (sortedOperation instanceof ReversedOperation)
+                        Collections.reverse(data);
+                    else
+                        data.sort(sortedOperation.comparator);
 
                 //now, we can replace the iterator
                 setSourceIterator(data.iterator());
@@ -439,11 +442,12 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
     //sorted()
     private int sortedCount;
 
-    public static class SortedOperation<T> implements IntermediateOperation {
-        private final Comparator<? super T> comparator;
+    private class SortedOperation<E> implements IntermediateOperation {
+        private final Comparator<? super E> comparator;
 
-        SortedOperation(Comparator<? super T> comparator) {
+        SortedOperation(Comparator<? super E> comparator) {
             this.comparator = comparator;
+            sortedCount++;
         }
     }
 
@@ -452,7 +456,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         throwIfNotWaiting();
 
         intermediateOperations.add(new SortedOperation<>(null));
-        sortedCount++;
 
         return this;
     }
@@ -464,7 +467,21 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         throwIfNotWaiting();
 
         intermediateOperations.add(new SortedOperation<>(comparator));
-        sortedCount++;
+
+        return this;
+    }
+
+    private class ReversedOperation<E> extends SortedOperation<E> {
+        ReversedOperation() {
+            super(null);
+        }
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public Streamer<T> reversed() {
+        throwIfNotWaiting();
+
+        intermediateOperations.add(new ReversedOperation());
 
         return this;
     }
@@ -799,6 +816,26 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                 return Optional.of(streamerIterator.next());
             else
                 return Optional.empty();
+        } finally {
+            internalClose();
+        }
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public Optional<T> findLast() {
+        prepareRun();
+
+        try {
+            if (!streamerIterator.hasNext())
+                return Optional.empty();
+
+            T last;
+
+            do {
+                last = streamerIterator.next();
+            } while (streamerIterator.hasNext());
+
+            return Optional.of(last);
         } finally {
             internalClose();
         }
