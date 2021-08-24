@@ -53,6 +53,31 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return new Streamer<>(iterator);
     }
 
+    @SuppressWarnings("unused")
+    public static <E> Streamer<E> from(Stream<E> stream) {
+        return new Streamer<>(stream.iterator());
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public static Streamer<Integer> from(IntStream intStream) {
+        return new Streamer<>(intStream.boxed().iterator());
+    }
+
+    @SuppressWarnings("unused")
+    public static Streamer<Long> from(LongStream longStream) {
+        return new Streamer<>(longStream.boxed().iterator());
+    }
+
+    @SuppressWarnings("unused")
+    public static Streamer<Double> from(DoubleStream doubleStream) {
+        return new Streamer<>(doubleStream.boxed().iterator());
+    }
+
+    @SuppressWarnings({"unused", "WeakerAccess"})
+    public static Streamer<Integer> from(CharSequence charSequence) {
+        return from(charSequence.chars());
+    }
+
     @SuppressWarnings("WeakerAccess")
     public static <K,V> Streamer<Map.Entry<K,V>> from(Map<K,V> map) {
         return from(map.entrySet());
