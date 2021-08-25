@@ -35,6 +35,37 @@ class StressTests {
     }
 
     @Test
+    void test2() {
+        final Streamer<?> streamer =
+                Streamer
+                        .of(11, 472, 11, 90, 41, 1, 5, 9, 19, 47, 11, 10)
+                        .last(12)   //(11, 472, 11, 90, 41, 1, 5, 9, 19, 47, 11, 10)
+                        .reversed() //(10, 11, 47, 19, 9, 5, 1, 41, 90, 11, 472, 11)
+                        .distinct() //([11], 472, [11], 90, 41, 1, 5, 9, 19, 47, 11, 10)
+                        .skip(1)    //([472], 90, 41, 1, 5, 9, 19, 47, 11, 10)
+                        .limit(8)   //(90, 41, 1, 5, 9, 19, 47, 11, [10])
+                        .last(7)    //([90], 41, 1, 5, 9, 19, 47, 11)
+                        .sorted(Comparator.reverseOrder())  //(47, 41, 19, 11, 9, 5, 1)
+                        .map(i -> i == 19 ? 11 : i)         //(47, 41, [19]->11, 11, 9, 5, 1)
+                        .distinct() //(47, 41, [11], 11, 9, 5, 1)
+                        .last(100)  //(47, 41, [11], 11, 9, 5, 1)
+                        .sorted()   //(1, 5, 9, 11, 41, 47)
+                        .skip(1)    //([1], 5, 9, 11, 41, 47)
+                        .map(String::valueOf) //("5", "9", "11", "41", "47")
+                        .reversed() //("47", "41", "11", "9", "5")
+                        .last(3)    //(["47"], ["41"], "11", "9", "5")
+                        .map(s ->
+                                s.equals("11")
+                                        ? "eleven"
+                                        : s.equals("9")
+                                        ? "nine"
+                                        : String.format("(%s)unknown", s))
+                ;
+
+        assertArrayEquals(new String[]{"eleven","nine","(5)unknown"}, streamer.toArray());
+    }
+
+    @Test
     void fibonacciNumbersTest() {
         int[] actual = Streamer
                 .iterate(new int[]{0,1}, ints -> new int[]{ints[1],ints[0] + ints[1]})

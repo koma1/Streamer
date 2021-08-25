@@ -221,8 +221,10 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         @Override
         public boolean hasNext() {
             if (hasNext == null) {
-                if (sortedCount > 0)
-                    calculateSorted();
+                if (collectedOperationsCount > 0) {
+                    calculateCollectedOperations();
+                    collectedOperationsCount = collectedOperationsCount *(-1);
+                }
 
                 calcNextAndHasNext();
 
@@ -244,16 +246,16 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
 
         @SuppressWarnings("unchecked")
-        private void calculateSorted() {
-            for (int i = 1; i <= sortedCount; i++) {
+        private void calculateCollectedOperations() {
+            for (int i = 1; i <= collectedOperationsCount; i++) {
                 //building local operations list (from general operations list, by extracting sublist)
                 final List<IntermediateOperation> localOperations = new LinkedList<>();
-                SortedOperation<T> sortedOperation = null;
+                CollectedOperation collectedOperation = null;
                 for (Iterator<IntermediateOperation> itr = intermediateOperations.iterator(); itr.hasNext(); ) {
                     IntermediateOperation operation = itr.next();
                     try {
-                        if (operation instanceof SortedOperation) {
-                            sortedOperation = (SortedOperation<T>) operation;
+                        if (operation instanceof CollectedOperation) {
+                            collectedOperation = (CollectedOperation) operation;
                             break;
                         } else
                             localOperations.add(operation);
@@ -263,7 +265,7 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                 }
 
                 //data collecting
-                final List<T> data = new ArrayList<>();
+                List<T> data = new ArrayList<>();
                 NullableValue<T> nextValue;
                 do {
                     nextValue = getNext(localOperations);
@@ -273,11 +275,17 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
                 } while (nextValue != null);
 
                 //sorting...
-                if (sortedOperation != null)
-                    if (sortedOperation instanceof ReversedOperation)
+                if (collectedOperation != null)
+                    if (collectedOperation instanceof ReversedOperation)
                         Collections.reverse(data);
-                    else
-                        data.sort(sortedOperation.comparator);
+                    else if (collectedOperation instanceof SortedOperation)
+                        data.sort(((SortedOperation<T>)collectedOperation).comparator);
+                    else if (collectedOperation.getClass() == LastOperation.class) { //todo: getClass -> instanceof
+                        int fromIndex = data.size() - ((LastOperation) collectedOperation).count;
+                        if (fromIndex >= 0)
+                            data = data.subList(fromIndex, data.size());
+                    } else
+                        throw new UnsupportedOperationException("calculateCollectedOperations() - unknown CollectedOperation class: " + collectedOperation.getClass());
 
                 //now, we can replace the iterator
                 setSourceIterator(data.iterator());
@@ -439,15 +447,18 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         return this;
     }
 
-    //sorted()
-    private int sortedCount;
+    private int collectedOperationsCount;
 
-    private class SortedOperation<E> implements IntermediateOperation {
+    private interface CollectedOperation extends IntermediateOperation {}
+
+    //sorted()
+
+    private class SortedOperation<E> implements CollectedOperation {
         private final Comparator<? super E> comparator;
 
         SortedOperation(Comparator<? super E> comparator) {
             this.comparator = comparator;
-            sortedCount++;
+            collectedOperationsCount++;
         }
     }
 
@@ -482,6 +493,25 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         throwIfNotWaiting();
 
         intermediateOperations.add(new ReversedOperation());
+
+        return this;
+    }
+
+    //last()
+    private class LastOperation implements CollectedOperation {
+        private final int count; //Total elements count, that stream must take from end
+
+        LastOperation(int count) {
+            this.count = count;
+            collectedOperationsCount++;
+        }
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public Streamer<T> last(int count) {
+        throwIfNotWaiting();
+
+        intermediateOperations.add(new LastOperation(count));
 
         return this;
     }
