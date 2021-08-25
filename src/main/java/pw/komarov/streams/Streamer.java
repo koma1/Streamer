@@ -118,7 +118,6 @@ public final class Streamer<T> implements Stream<T>, Iterable<T> {
         }
     }
 
-    @SuppressWarnings("WeakerAccess")
     public static <E> Streamer<E> generate(Supplier<E> supplier) {
         return from(new InfiniteGenerator<>(supplier));
     }
